@@ -1,11 +1,116 @@
+////////////////
+//////
+#include <WiFi.h>
+#include <WiFiAP.h>
+#include <ESPmDNS.h>
+// Set these to your desired credentials.
+const char *ss = "Arduino";
+const char *pass = "abcd1234";
+
+//////
+#include "FS.h"
+#include "ArduinoJson.h"
+
+
+///// BASE DE DATOS
+#include <MySQL_Connection.h>
+#include <MySQL_Cursor.h>
+
+byte mac_addr[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
+
+IPAddress server_addr(192,168,1,39);  // IP of the MySQL *server* here
+char user[] = "antonio";              // MySQL user login username
+char passwordDB[] = "password";        // MySQL user login password
+
+/// BASE DE DATOS
+  WiFiClient client;            // Use this for WiFi instead of EthernetClient
+  MySQL_Connection conn((Client *)&client);
+  
+// Import required libraries
+#include "WiFi.h"
+#include "ESPAsyncWebServer.h"
+#include "SPIFFS.h"
+
+// Create AsyncWebServer object on port 80
+AsyncWebServer server(80);
+
+String lectura(const String& var){
+  //Lectura fichero JSON
+  File file = SPIFFS.open("/configuracion.json","r");
+  
+  DynamicJsonDocument doc(1024);                         //Memory pool
+  DeserializationError error = deserializeJson(doc, file); //Parse message
+  if(error){
+    Serial.print(F("deserializeJson() failed: "));
+    Serial.println(error.f_str());
+    return String();
+  }
+  file.close();
+
+  if(var == "SSID"){
+    const char* value = doc["ssid"];
+    return value;
+  }
+  if(var == "PASSWORD"){
+    const char* value = doc["password"];
+    return value;
+  }
+  if(var == "CO2_MAX"){
+    const char* value = doc["co2_max"];
+    return value;
+  }
+  if(var == "CO2_MID"){
+    const char* value = doc["co2_mid"];
+    return value;
+  }
+  if(var == "DISTANCE"){
+    const char* value = doc["distance"];
+    return value;
+  }
+  if(var == "DNI"){
+    const char* value = doc["dni"];
+    return value;
+  }
+  
+  return String();
+}
+String modifyWifi(String ssid, String password){
+    DynamicJsonDocument doc = readConFile();
+    doc["ssid"] = ssid;
+    doc["password"] = password;
+
+    writeConFile(doc);
+    
+    return String();
+}
+String modifyLimits(String co2_max, String co2_mid, String distance){
+    DynamicJsonDocument doc = readConFile();
+    doc["co2_max"] = co2_max;
+    doc["co2_mid"] = co2_mid;
+    doc["distance"] = distance;
+
+    writeConFile(doc);
+    
+    return String();
+}
+String modifyStudent(String dni){
+    DynamicJsonDocument doc = readConFile();
+    doc["dni"] = dni;
+
+    writeConFile(doc);
+    
+    return String();
+}
+////////////////
+
 // Pantalla
 #include <SPI.h>
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
-#define SCREEN_WIDTH 128 // OLED display width, in pixels
-#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+#define SCREEN_WIDTH 128 // Ancho en pixeles pantalla
+#define SCREEN_HEIGHT 64 // Altura en pixeles pantalla
 
 // Declaration for SSD1306 display connected using software SPI (default case):
 #define OLED_MOSI  23
@@ -98,6 +203,106 @@ Simple_HCSR04 *sensor;
 void setup() {
   Serial.begin(115200); //Para hacer debug
 
+  ////////////////////////
+
+  // Initialize SPIFFS
+  if(!SPIFFS.begin(true)){
+    Serial.println("Error al montar el sistema de ficheros SPIFFS");
+    return;
+  }
+  
+  createAccessPoint();
+  
+
+
+                           //Memory pool
+  
+  // Connect to Wi-Fi
+  //const char* ssid = doc["ssid"];
+  //const char* password = doc["password"];
+  
+  connectWifi();
+
+  connectDB();
+  
+  startDNS();
+  
+  // Print ESP32 Local IP Address
+  Serial.println(WiFi.localIP());
+
+  // Route for root / web page
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(SPIFFS, "/index.html", String(), false, lectura);
+  });
+  
+  // Route to load style.css file
+  server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(SPIFFS, "/style.css", "text/css");
+  });
+
+  server.on("/modifyWifi", HTTP_GET, [](AsyncWebServerRequest *request){
+    String ssid;
+    String password;
+    if (request->hasParam("ssid")){
+      ssid = request->getParam("ssid")->value();
+    }
+    else{
+      ssid = "No se ha introducido SSID";
+    }
+    if (request->hasParam("password")){
+      password = request->getParam("password")->value();
+    }
+    else{
+      password = "No se ha introducido contraseña";
+    }
+    modifyWifi(ssid, password);
+    request->send(SPIFFS, "/index.html", String(), false, lectura);
+  });
+  server.on("/modifyLimits", HTTP_GET, [](AsyncWebServerRequest *request){
+    String co2_max;
+    String co2_mid;
+    String distance;
+    if (request->hasParam("co2_max")){
+      co2_max = request->getParam("co2_max")->value();
+    }
+    else{
+      co2_max = "No se ha introducido CO2_MAX";
+    }
+    if (request->hasParam("co2_mid")){
+      co2_mid = request->getParam("co2_mid")->value();
+    }
+    else{
+      co2_mid = "No se ha introducido CO2_MID";
+    }
+    if (request->hasParam("distance")){
+      distance = request->getParam("distance")->value();
+    }
+    else{
+      distance = "No se ha introducido distancia";
+    }
+    modifyLimits(co2_max, co2_mid, distance);
+    request->send(SPIFFS, "/index.html", String(), false, lectura);
+  });
+  server.on("/modifyStudent", HTTP_GET, [](AsyncWebServerRequest *request){
+    String dni;
+    
+    if (request->hasParam("dni")){
+      dni = request->getParam("dni")->value();
+    }
+    else{
+      dni = "No se ha introducido SSID";
+    }
+    
+    modifyStudent(dni);
+    request->send(SPIFFS, "/index.html", String(), false, lectura);
+  });
+
+  
+  // Start server
+  server.begin();
+
+  ///////////////
+  
   //PANTALLA
   if(!display.begin(SSD1306_SWITCHCAPVCC)) {
     Serial.println(F("SSD1306 allocation failed"));
@@ -126,7 +331,7 @@ void loop() {
 
   // Lectura CO2
   int medicion = analogRead(PIN_SENSOR);
-  Serial.print("Medicion:");
+  Serial.print("Medicion CO2:");
   Serial.println(medicion);
 
   //Lectura Distancia
@@ -156,11 +361,34 @@ void loop() {
   display.println("Medicion CO2:");
 
   // Barras señal wifi
-  display.fillRect(100,13,3,3,WHITE);
-  display.fillRect(105,10,3,6,WHITE);
-  display.fillRect(110,7,3,9,WHITE);
-  display.fillRect(115,4,3,12,WHITE);
-  
+  long rssi = WiFi.RSSI();
+  Serial.print("rssi:");
+  Serial.println(rssi);
+  Serial.println("");
+  int bars;
+  //display.fillRect(100,13,3,3,WHITE);
+  //display.fillRect(105,10,3,6,WHITE);
+  //display.fillRect(110,7,3,9,WHITE);
+  //display.fillRect(115,4,3,12,WHITE);
+  if (rssi >= -55) {
+    bars = 5;
+  } else if (rssi <= -55 & rssi >= -65) {
+    bars = 4;
+  } else if (rssi <= -65 & rssi >= -70) {
+    bars = 3;
+  } else if (rssi <= -70 & rssi >= -78) {
+    bars = 2;
+  } else if (rssi <= -78 & rssi >= -82) {
+    bars = 1;
+  } else {
+    bars = 0;
+  }
+
+  for (int b = 0; b <= bars; b++) {
+    //display.fillRect(59 + (b*5),33 - (b*5),3,b*5,WHITE);
+    //display.fillRect(59 + (b*5),33 - (b*3),3,b*4,WHITE);
+    display.fillRect(95 + (b * 5), 10 - (b * 2), 3, b * 2, WHITE);
+  }
 
   display.setTextColor(WHITE);
   display.setTextSize(1);
@@ -180,4 +408,69 @@ void loop() {
   display.display();
 
   delay(5000); //Actualización cada 5 segundos
+}
+
+void connectDB(){
+  /// BASE DE DATOS
+  Serial.println("Conectando DB...");
+    if (conn.connect(server_addr, 3306, user, passwordDB)) {
+      delay(1000);
+    }
+    else
+      Serial.println("No se ha podido conectar DB.");
+    //conn.close();
+  ///
+}
+void createAccessPoint(){
+  // Set these to your desired credentials.
+  DynamicJsonDocument doc = readConFile();
+  String dni = doc["dni"];
+  String ssidap = "Arduino_" + dni;
+  const char *ssidAP = ssidap.c_str();
+  const char *passwordAP = "abcd1234";
+  WiFi.softAP(ssidAP, passwordAP);
+  IPAddress myIP = WiFi.softAPIP();
+  Serial.print("Dirección IP Punto de Acceso: ");
+  Serial.println(myIP);
+}
+DynamicJsonDocument readConFile(){
+  //Lectura fichero JSON
+  File file = SPIFFS.open("/configuracion.json","r");
+  
+  DynamicJsonDocument doc(1024);                         //Memory pool
+  DeserializationError error = deserializeJson(doc, file); //Parse message
+  if(error){
+    Serial.print(F("deserializeJson() failed: "));
+    Serial.println(error.f_str());
+    return doc;
+  }
+  file.close();
+  return doc;
+}
+void writeConFile(DynamicJsonDocument doc){
+  File file = SPIFFS.open("/configuracion.json", "w+");
+  serializeJson(doc, file);
+  file.close();
+}
+void connectWifi(){
+  DynamicJsonDocument doc = readConFile();
+  const char* ssid = doc["ssid"];
+  const char* password = doc["password"];
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("Conectando WiFi..");
+  }
+}
+void startDNS(){
+  DynamicJsonDocument doc = readConFile();
+  String dni = doc["dni"];
+  String hostname = "arduino_" + dni;
+  Serial.print("HOSTNAME: ");
+  Serial.println(hostname);
+  //DNS
+  if(!MDNS.begin(hostname.c_str())) {
+     Serial.println("Error al iniciar mDNS");
+     return;
+  }
 }

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es"><head>
+  <title>Configuración Arduino</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+  <h1>Configuración Arduino</h1>
+
+  <form action="/modifyWifi" method="post">
+    <h3>Parámetros de Conexión</h3>
+    <ul>
+     <li>
+       <label for="ssid">SSID:</label>
+       <input type="text" id="ssid" name="ssid" value=%SSID%>
+     </li>
+     <li>
+        <label for="password">Password:</label>
+        <input type="text" id="password" name="password" value=%PASSWORD%>
+      </li>
+    </ul>
+    <br>
+    <input type="submit" value="Guardar" class="button">
+  </form>
+
+  <br>
+  
+  <form action="/modifyLimits">
+    <h3>Establecer límites</h3>
+    <ul>
+      <li>
+        <label for="co2_max">Máximo CO2:</label>
+        <input type="number" id="co2_max" name="co2_max" value=%CO2_MAX%>
+      </li>
+      <li>
+        <label for="co2_mid">Mínimo CO2:</label>
+        <input type="number" id="co2_mid" name="co2_mid" value=%CO2_MID%>
+      </li>
+      <li>
+        <label for="distance">Distancia (cm):</label>
+        <input type="number" id="distance" name="distance" value=%DISTANCE%>
+      </li>
+     </ul>
+     <br>
+    <input type="submit" value="Guardar" class="button">
+  </form><br>
+
+
+  <form action="/modifyStudent">
+    <h3>Datos del Alumno</h3>
+    <ul>
+      <li>
+        <label for="dni">DNI:</label>
+        <input type="text" id="dni" name="dni" value=%DNI%>
+      </li>
+     </ul>
+     <br>
+    <input type="submit" value="Guardar" class="button">
+  </form><br>
+
+
+</body>
+</html>
