@@ -4,5 +4,8 @@
   "co2_max": "400",
   "co2_mid": "200",
   "distance": "140",
-  "dni": "12345678A"
+  "dni": "12345678A",
+  "nombre": "Antonio",
+  "apellidos": "Felipe Rojo",
+  "alu_password": "1234"
 }

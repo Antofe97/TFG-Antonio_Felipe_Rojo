@@ -9,26 +9,31 @@
 <body>
   <h1>Configuración Arduino</h1>
 
-  <form action="/modifyWifi" method="post">
+  <form action="/modifyWifi">
     <h3>Parámetros de Conexión</h3>
     <ul>
      <li>
-       <label for="ssid">SSID:</label>
-       <input type="text" id="ssid" name="ssid" value=%SSID%>
+       <p class="minus">%SSID%</p>
      </li>
      <li>
-        <label for="password">Password:</label>
-        <input type="text" id="password" name="password" value=%PASSWORD%>
+      <label for="ssid">SSID:</label>
+      <select name="ssid" id="redes" onload="httpGetAsync()">
+        <option id="buscando">Buscando redes...</option>
+      </select>
+    </li>
+     <li>
+        <label for="password">Contraseña:</label>
+        <input type="text" id="password" name="password">
       </li>
     </ul>
     <br>
-    <input type="submit" value="Guardar" class="button">
+    <input type="submit" value="Guardar y Conectar" class="button">
   </form>
 
   <br>
   
   <form action="/modifyLimits">
-    <h3>Establecer límites</h3>
+    <h3 id='prueba'>Establecer límites</h3>
     <ul>
       <li>
         <label for="co2_max">Máximo CO2:</label>
@@ -55,11 +60,50 @@
         <label for="dni">DNI:</label>
         <input type="text" id="dni" name="dni" value=%DNI%>
       </li>
+      <li>
+        <label for="nombre">Nombre:</label>
+        <input type="text" id="nombre" name="nombre" value=%NOMBRE%>
+      </li>
+      <li>
+        <label for="apellidos">Apellidos:</label>
+        <input type="text" id="apellidos" name="apellidos" value=%APELLIDOS%>
+      </li>
+      <li>
+        <label for="alu_password">Contraseña:</label>
+        <input type="text" id="alu_password" name="alu_password" value=%ALU_PASSWORD%>
+      </li>
      </ul>
      <br>
     <input type="submit" value="Guardar" class="button">
   </form><br>
 
+  <script>
+    window.onload = function() {
+      httpGetAsync();
+    };
+    function httpGetAsync(){
+      var xmlHttp = new XMLHttpRequest();
+      xmlHttp.onreadystatechange = function() { 
+        if (xmlHttp.status == 200 && xmlHttp.readyState == 4)
+          escribir(xmlHttp.responseText);
+      }
+      var url = "http://" + window.location.hostname + "/scanWiFi";
+      xmlHttp.open("GET", url, true); // true for asynchronous 
+      xmlHttp.send(null);
+    }
+    function escribir(redes){
+      const obj = JSON.parse(redes);
+      document.getElementById('buscando').remove();
+      select = document.getElementById('redes');
+        for (var i = 0; i< obj.length; i++){
+          var opt = document.createElement('option');
+          opt.appendChild(document.createTextNode(obj[i]));
+          opt.value = obj[i];
+          //opt.innerHTML = obj[i];
+          select.appendChild(opt);
+        }
+    }
+  </script> 
 
 </body>
 </html>
