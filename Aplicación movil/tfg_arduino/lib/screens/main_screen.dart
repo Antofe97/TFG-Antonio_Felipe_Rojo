@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mysql1/mysql1.dart';
+import 'package:tfg_arduino/tabs/arduino_tab.dart';
 import 'package:tfg_arduino/tabs/profile_tab.dart';
+import 'package:tfg_arduino/tabs/statistics_tab.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({ Key? key }) : super(key: key);
@@ -12,26 +14,19 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
 
   int _selectedIndex = 0;
-  //Color topBarColor = Colors.red;
+
 
   static const TextStyle optionStyle = TextStyle(fontSize: 30, fontWeight: FontWeight.bold);
+  
 
   static const List<Widget> _widgetOptions = <Widget>[
-    //PrimeraPantalla(),
-    //SegundaPantalla(),
-    //profileScreen()
-    Text(
-      'Index 0: Estadisticas',
-      style: optionStyle,
-    ),
-    Text(
-      'Index 1: Arduino',
-      style: optionStyle,
-    ),
+    StatisticsTab(),
+    ArduinoTab(),
     ProfileTab()
   ];
 
   static const List<Color> _colorOptions = [Colors.red, Colors.green, Colors.blue];
+  static const List<Text> _titles = [Text('Estadísticas'), Text('Arduino'), Text('Perfil')];
 
   void _onItemTapped(int index) {
     setState(() {
@@ -45,7 +40,7 @@ class _MainScreenState extends State<MainScreen> {
       onWillPop: _onWillPop,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text(''),
+          title: _titles.elementAt(_selectedIndex),
           backgroundColor: _colorOptions.elementAt(_selectedIndex),
         ),
         body: Center(

@@ -20,7 +20,8 @@ const char *pass = "abcd1234";
 
 //byte mac_addr[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 
-IPAddress server_addr(192,168,1,39);  // IP of the MySQL *server* here
+IPAddress server_addr;  // IP of the MySQL *server* here
+char hostname_DB[] = "tfgarduino.ddns.net";
 char user[] = "antonio";              // MySQL user login username
 char passwordDB[] = "password";        // MySQL user login password
 
@@ -448,8 +449,17 @@ void loop() {
 
 void connectDB(){
   /// BASE DE DATOS
+  int err = WiFi.hostByName(hostname_DB, server_addr);
+  if(err == 1){
+    Serial.println("Obteniendo IP del servidor...");
+    Serial.print("Dirección IP: ");
+    Serial.println(server_addr);
+  } else {
+    Serial.print("Error al obtener IP del servidor. Código de error: ");
+    Serial.println(err);
+  }
   Serial.println("Conectando DB...");
-    if (conn.connect(server_addr, 3306, user, passwordDB)) {
+    if (conn.connect(server_addr, 1234, user, passwordDB)) {
       delay(1000);
     }
     else

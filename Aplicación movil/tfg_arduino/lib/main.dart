@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:tfg_arduino/screens/login_screen.dart';
-import 'package:tfg_arduino/utilities/user_secure_storage.dart';
 
 void main() {
   runApp(const MyApp());

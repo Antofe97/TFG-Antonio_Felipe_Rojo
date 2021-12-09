@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:mysql1/mysql1.dart';
 import 'package:tfg_arduino/screens/main_screen.dart';
 import 'package:tfg_arduino/utilities/user_secure_storage.dart';
-
+import 'package:tfg_arduino/utilities/alert_dialogs.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({ Key? key }) : super(key: key);
@@ -27,7 +27,12 @@ class _LoginScreenState extends State<LoginScreen> {
   Future userLoged() async {
     final email = await UserSecureStorage.getEmail();
     final password = await UserSecureStorage.getPassword();
+
+    
+
     if(email != null && password != null){
+      dniController.text = email.toString();
+      passwordController.text = password.toString();
       connectDB(context, email, password);
     }
   }
@@ -82,7 +87,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
 Future connectDB(context, dni, password) async{
   
-  _showLoadingDialog(context);
+  showLoadingDialog(context);
 
   var settings = ConnectionSettings(
     host: 'tfgarduino.ddns.net', 
@@ -102,13 +107,12 @@ Future connectDB(context, dni, password) async{
       Navigator.pop(context);
       await conn.close();
       await UserSecureStorage.setLoginParameters(dni, password);
-      print('GUARDADOS PARAMETROS DE INICIO DE SESION');
       _logInApp(context);
     }
     else{
       Navigator.pop(context);
       await conn.close();
-      _showDialog(context, 'No se ha podido iniciar sesión', 'El DNI introducido o la contraseña son incorrectas. Vuelve a intentarlo.');
+      showMyDialog(context, 'No se ha podido iniciar sesión', 'El DNI introducido o la contraseña son incorrectas. Vuelve a intentarlo.');
     }
     /*for (var row in results) {
       print('DNI: ${row[0]}, Nombre: ${row[1]}, Apellidos: ${row[2]}, Contraseña: ${row[3]}');
@@ -128,7 +132,7 @@ Future connectDB(context, dni, password) async{
   } on SocketException catch (e){
     print('Error caught: $e');
     Navigator.pop(context);
-    _showDialog(context, 'No se ha podido conectar', 'Error al conectar con la base de datos. Vuelve a intentarlo mas tarde');
+    showMyDialog(context, 'No se ha podido conectar', 'Error al conectar con la base de datos. Vuelve a intentarlo mas tarde.');
     
   }
 }
@@ -143,46 +147,5 @@ void _logInApp(context) {
   );
 }
 
-Future<void> _showDialog(context, title, text) async {
-  return showDialog<void>(
-    context: context,
-    barrierDismissible: false, // user must tap button!
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: Text(title),
-        content: SingleChildScrollView(
-          child: ListBody(
-            children: <Widget>[
-              Text(text),
-            ],
-          ),
-        ),
-        actions: <Widget>[
-          TextButton(
-            child: const Text('Cerrar'),
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-          ),
-        ],
-      );
-    },
-  );
-}
 
-Future<void> _showLoadingDialog(context) async {
-  return showDialog<void>(
-    context: context,
-    barrierDismissible: false, // user must tap button!
-    builder: (BuildContext context) {
-      return AlertDialog(
-        content: Row(
-        children: [
-          const CircularProgressIndicator(),
-          Container(margin: const EdgeInsets.only(left: 20),child: const Text("Iniciando Sesión..." )),
-        ],),
-        
-      );
-    },
-  );
-}
+
