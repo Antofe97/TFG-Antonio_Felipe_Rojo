@@ -50,7 +50,7 @@ class _LoginScreenState extends State<LoginScreen> {
       appBar: AppBar(
         title: const Text('TFG Arduino')
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 35.0, vertical: 50),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
