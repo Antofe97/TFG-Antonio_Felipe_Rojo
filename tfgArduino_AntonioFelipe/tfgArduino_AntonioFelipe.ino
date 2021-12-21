@@ -1,4 +1,10 @@
+//  LED RGB
+#include <Adafruit_NeoPixel.h>
+#define PIN 15
+#define NUM 1
 
+Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUM,PIN, NEO_GRB + NEO_KHZ800);
+//
 ////////////////
 //////
 #include <DNSServer.h>
@@ -7,7 +13,7 @@
 #include <ESPmDNS.h>
 // Set these to your desired credentials.
 const char *ss = "Arduino";
-const char *pass = "abcd1234";
+const char *pass = "arduino";
 
 //////
 #include "FS.h" //Para usar File
@@ -22,8 +28,8 @@ const char *pass = "abcd1234";
 
 IPAddress server_addr;  // IP of the MySQL *server* here
 char hostname_DB[] = "tfgarduino.ddns.net";
-char user[] = "antonio";              // MySQL user login username
-char passwordDB[] = "password";        // MySQL user login password
+char user[] = "arduino";              // MySQL user login username
+char passwordDB[] = "Arduino.1234";        // MySQL user login password
 
 /// BASE DE DATOS
   WiFiClient client;            // Use this for WiFi instead of EthernetClient
@@ -42,7 +48,8 @@ int conf_distance;
 int conf_co2_mid;
 int conf_co2_max;
 String conf_dni;
-boolean semaforo;
+boolean semaforo =true;
+boolean semaforoDB;
 
 TaskHandle_t TaskCheckConnections;
 
@@ -87,7 +94,21 @@ String lectura(const String& var){
     const char* value = doc["distance"];
     return value;
   }
-  if(var == "DNI"){
+  String dni = doc["dni"];
+  
+  String alu_password = doc["alu_password"];
+  if(var == "SESION"){
+    Serial.println("DNI: " +dni+" , PASSWORD: " + alu_password);
+    if(comprobarSesion(dni, alu_password)) {
+      Serial.println("SESION CORRECTA");
+      
+      return "Sesión iniciada como: " + dni;
+    } else{
+      Serial.println("SESION INCORRECTA");
+      return "";
+      }
+  }
+  /*if(var == "DNI"){
     const char* value = doc["dni"];
     return value;
   }
@@ -102,22 +123,47 @@ String lectura(const String& var){
   if(var == "ALU_PASSWORD"){
     const char* value = doc["alu_password"];
     return value;
-  }
+  }*/
   
   return String();
+}
+boolean comprobarSesion(String dni, String password){
+  String sentencia = "SELECT * FROM TFG_ARDUINO.alumno WHERE dni = '" + dni + "' AND password = '" + password +"';";
+  int str_len = sentencia.length() + 1; //Length (with one extra character for the null terminator)
+  char INSERT_SQL[str_len];
+  sentencia.toCharArray(INSERT_SQL, str_len);
+
+  Serial.println("MENSAJE DESDE comprobarSesion");
+  // Initiate the query class instance
+  MySQL_Cursor *cur_mem = new MySQL_Cursor(&conn);
+  // Execute the query
+  cur_mem->execute(INSERT_SQL);
+  // Fetch the columns and print them
+  column_names *cols = cur_mem->get_columns();
+  // Read the rows and print them
+  row_values *row = NULL;
+  do {
+    row = cur_mem->get_next_row();
+    if (row != NULL) {
+        delete cur_mem;
+        return true;
+    }
+  } while (row != NULL);
+  
+  delete cur_mem; //Eliminar cursor para liberar memoria
+  return false;
 }
 String modifyWifi(String ssid, String password){
     DynamicJsonDocument doc = readConFile();
     doc["ssid"] = ssid;
     doc["password"] = password;
 
-    semaforo = false;
     WiFi.disconnect(true);
     writeConFile(doc);
     connectWifi();
     return String();
 }
-String modifyLimits(String co2_max, String co2_mid, String distance){
+String modifyLimits(String co2_mid, String co2_max, String distance){
     DynamicJsonDocument doc = readConFile();
     doc["co2_max"] = co2_max;
     doc["co2_mid"] = co2_mid;
@@ -128,18 +174,32 @@ String modifyLimits(String co2_max, String co2_mid, String distance){
     conf_co2_mid = co2_mid.toInt();
     
     writeConFile(doc);
-    
     return String();
 }
-String modifyStudent(String dni, String nombre, String apellidos, String password){
+String iniciarSesion(String dni, String password){
+  if(comprobarSesion(dni, password)){
     DynamicJsonDocument doc = readConFile();
     doc["dni"] = dni;
-    doc["nombre"] = nombre;
-    doc["apellidos"] = apellidos;
     doc["alu_password"] = password;
 
-    updateAlumnoDB(dni, nombre, apellidos, password, conf_dni);
+    //updateAlumnoDB(dni, nombre, apellidos, password, conf_dni);
     conf_dni = dni;
+    
+    writeConFile(doc);
+
+    createAccessPoint();
+    startDNS();
+  }
+    return String();
+}
+
+String cerrarSesion(){
+    DynamicJsonDocument doc = readConFile();
+    doc["dni"] = "";
+    doc["alu_password"] = "";
+
+    //updateAlumnoDB(dni, nombre, apellidos, password, conf_dni);
+    conf_dni = "";
     
     writeConFile(doc);
 
@@ -148,6 +208,7 @@ String modifyStudent(String dni, String nombre, String apellidos, String passwor
     
     return String();
 }
+
 ////////////////
 
 // Pantalla
@@ -344,6 +405,8 @@ void setup() {
 
   display.clearDisplay();
   display.display();
+
+  pixels.begin();
 }
 
 void loop() {
@@ -368,11 +431,20 @@ void loop() {
   //{
   //  mensaje = "Distancia\ncorrecta";
   //}
+  if (medicionCO2 < conf_co2_mid){
+    mensaje = "Calidad aire\ncorrecta";
+    pixels.setPixelColor(0, pixels.Color(0,255,0));
+    pixels.show();
+  }
   if (medicionCO2 > conf_co2_mid && medicionCO2 < conf_co2_max){
     mensaje = "Aire\ncargandose";
+    pixels.setPixelColor(0, pixels.Color(255,255,0));
+    pixels.show();
   }
   if (medicionCO2 > conf_co2_max){
     mensaje = "Alta\nconcentracion CO2";
+    pixels.setPixelColor(0, pixels.Color(255,0,0));
+    pixels.show();
   }
   //inicializar pantalla
   display.setTextSize(1);
@@ -440,13 +512,56 @@ void loop() {
 
   display.display();
 
+  if(conn.connected() != 0){
+    if(conf_dni != ""){
+    if(semaforo){
+      semaforo = false;
+        insertMedicionDB(medicionCO2, conf_dni);
+        checkConfiguracionDB();
+      semaforo = true;
+    }
+  }
+  }
   
-
-  insertMedicionDB(medicionCO2, conf_dni);
+  
  
   delay(5000); //Actualización cada 5 segundos
 }
 
+void checkConfiguracionDB(){
+  String sentencia = "SELECT * FROM TFG_ARDUINO.configuracion WHERE alumno = '" + conf_dni + "';";
+  int str_len = sentencia.length() + 1; //Length (with one extra character for the null terminator)
+  char INSERT_SQL[str_len];
+  sentencia.toCharArray(INSERT_SQL, str_len);
+  
+  // Initiate the query class instance
+  MySQL_Cursor *cur_mem = new MySQL_Cursor(&conn);
+  // Execute the query
+  cur_mem->execute(INSERT_SQL);
+
+  Serial.println("MENSAJE DESDE checkConfiguracionDB");
+
+  // Fetch the columns and print them
+  column_names *cols = cur_mem->get_columns();
+  // Read the rows and print them
+  row_values *row = NULL;
+  int co2_mid;
+  int co2_max;
+  int distancia;
+  do {
+    row = cur_mem->get_next_row();
+    if (row != NULL) {
+        co2_mid = (int)row->values[0];
+        co2_max = (int)row->values[1];
+        distancia = (int)row->values[2];
+        if(conf_co2_mid != co2_mid || conf_co2_max != co2_max || conf_distance != distancia){
+          modifyLimits(row->values[0], row->values[1], row->values[2]);
+        }
+    }
+  } while (row != NULL);
+  
+  delete cur_mem; //Eliminar cursor para liberar memoria
+}
 void connectDB(){
   /// BASE DE DATOS
   int err = WiFi.hostByName(hostname_DB, server_addr);
@@ -516,7 +631,6 @@ void connectWifi(){
     Serial.println("Conectando WiFi..");
     intento++;
   }
-  semaforo = true;
 }
 void startDNS(){
   //Serial.println("Starting DNS Server");
@@ -604,7 +718,11 @@ void setupServer(){
       password = "No se ha introducido contraseña";
     }
 
-    modifyWifi(ssid, password);
+    if(semaforo){
+      semaforo = false;
+      modifyWifi(ssid, password);
+      semaforo = true;
+    }
     request->redirect("http://arduino_" + conf_dni + "/");
     //request->send(SPIFFS, "/index.html", String(), false, lectura);
   });
@@ -630,35 +748,44 @@ void setupServer(){
     else{
       distance = "No se ha introducido distancia";
     }
-    modifyLimits(co2_max, co2_mid, distance);
+    modifyLimits(co2_mid, co2_max, distance);
+    updateConfiguracionDB(co2_mid, co2_max, distance, conf_dni);
     request->redirect("http://arduino_" + conf_dni + "/");
     //request->send(SPIFFS, "/index.html", String(), false, lectura);
   });
-  server.on("/modifyStudent", HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on("/iniciarSesion", HTTP_GET, [](AsyncWebServerRequest *request){
     String dni;
-    String nombre;
-    String apellidos;
     String password;
     
     if (request->hasParam("dni")){
       dni = request->getParam("dni")->value();
     }
-    if (request->hasParam("nombre")){
-      nombre = request->getParam("nombre")->value();
-    }
-    if (request->hasParam("apellidos")){
-      apellidos = request->getParam("apellidos")->value();
-    }
     if (request->hasParam("alu_password")){
       password = request->getParam("alu_password")->value();
     }
     
-    
-    modifyStudent(dni, nombre, apellidos, password);
+    if(semaforo){
+      semaforo = false;
+      iniciarSesion(dni, password);
+      semaforo = true;
+    }
     delay(2000);
     request->redirect("http://arduino_" + conf_dni + "/");
     //request->send(SPIFFS, "/index.html", String(), false, lectura);
   });
+
+  server.on("/cerrarSesion", HTTP_GET, [](AsyncWebServerRequest *request){
+
+    if(semaforo){
+      semaforo = false;
+      cerrarSesion();
+      semaforo = true;
+    }
+    delay(2000);
+    request->redirect("http://arduino_" + conf_dni + "/");
+    //request->send(SPIFFS, "/index.html", String(), false, lectura);
+  });
+  
   server.on("/scanWiFi", HTTP_GET, [](AsyncWebServerRequest *request){
     String redes = scanWiFi();
     request->send(200, "application/json", redes);
@@ -675,6 +802,26 @@ void insertMedicionDB(int medicionCO2 , String alumno){
   int str_len = sentencia.length() + 1; //Length (with one extra character for the null terminator)
   char INSERT_SQL[str_len];
   sentencia.toCharArray(INSERT_SQL, str_len);
+
+  Serial.println("MENSAJE DESDE insertMedicionDB");
+  // Initiate the query class instance
+  MySQL_Cursor *cur_mem = new MySQL_Cursor(&conn);
+  // Execute the query
+  cur_mem->execute(INSERT_SQL);
+  // Note: since there are no results, we do not need to read any data
+  // Deleting the cursor also frees up memory used
+  delete cur_mem;
+
+}
+
+void updateConfiguracionDB(String co2Low , String co2Max, String distancia, String alumno){
+  
+  String sentencia = "UPDATE TFG_ARDUINO.configuracion SET co2Low = '" + co2Low + "', co2Max = '" + co2Max + "', distancia = '" + distancia + "'  WHERE alumno = '" + alumno + "'";
+  int str_len = sentencia.length() + 1; //Length (with one extra character for the null terminator)
+  char INSERT_SQL[str_len];
+  sentencia.toCharArray(INSERT_SQL, str_len);
+
+  Serial.println("MENSAJE DESDE updateConfiguracionDB");
   
   // Initiate the query class instance
   MySQL_Cursor *cur_mem = new MySQL_Cursor(&conn);
@@ -685,11 +832,14 @@ void insertMedicionDB(int medicionCO2 , String alumno){
   delete cur_mem;
 
 }
+
 void updateAlumnoDB(String dni, String nombre, String apellidos, String password, String conf_dni){
   String sentencia = "UPDATE TFG_ARDUINO.alumno SET dni = '" + dni + "', nombre = '" + nombre + "', apellidos = '" + apellidos + "', password = '" + password + "' WHERE dni = '" + conf_dni + "'";
   int str_len = sentencia.length() + 1; //Length (with one extra character for the null terminator)
   char UPDATE_SQL[str_len];
   sentencia.toCharArray(UPDATE_SQL, str_len);
+
+  Serial.println("MENSAJE DESDE updateAlumnoDB");
   
   // Initiate the query class instance
   MySQL_Cursor *cur_mem = new MySQL_Cursor(&conn);
@@ -703,6 +853,7 @@ void updateAlumnoDB(String dni, String nombre, String apellidos, String password
 void checkConnections( void * parameter){
   for(;;){
     if(semaforo){
+      semaforo = false;
       //Comprueba si esta conectado a la red WiFi.
       if (WiFi.status() != WL_CONNECTED) {
         Serial.println("Desconectado de la red WiFi. Intentando conectar...");
@@ -713,6 +864,7 @@ void checkConnections( void * parameter){
         Serial.println("Desconectado de la DB. Intentando conectar...");
         connectDB();    
       }
+      semaforo = true;
     }
     
     delay(5000);

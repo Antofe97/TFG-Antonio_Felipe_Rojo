@@ -1,11 +1,11 @@
 {
-  "ssid": "MOVISTAR_46A0",
-  "password": "HPnLkLrbfhL42L8maPUy",
-  "co2_max": "400",
-  "co2_mid": "200",
+  "ssid": "",
+  "password": "",
+  "co2_max": "1400",
+  "co2_mid": "600",
   "distance": "140",
-  "dni": "12345678A",
-  "nombre": "Antonio",
-  "apellidos": "Felipe Rojo",
-  "alu_password": "1234"
+  "dni": "",
+  "nombre": "",
+  "apellidos": "",
+  "alu_password": ""
 }

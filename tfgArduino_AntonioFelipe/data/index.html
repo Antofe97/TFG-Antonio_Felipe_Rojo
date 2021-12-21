@@ -53,20 +53,12 @@
   </form><br>
 
 
-  <form action="/modifyStudent">
-    <h3>Datos del Alumno</h3>
+  <form id="formIniciarSesion" action="/iniciarSesion" style="display: block;">
+    <h3>Cuenta</h3>
     <ul>
       <li>
         <label for="dni">DNI:</label>
         <input type="text" id="dni" name="dni" value=%DNI%>
-      </li>
-      <li>
-        <label for="nombre">Nombre:</label>
-        <input type="text" id="nombre" name="nombre" value=%NOMBRE%>
-      </li>
-      <li>
-        <label for="apellidos">Apellidos:</label>
-        <input type="text" id="apellidos" name="apellidos" value=%APELLIDOS%>
       </li>
       <li>
         <label for="alu_password">Contraseña:</label>
@@ -74,7 +66,18 @@
       </li>
      </ul>
      <br>
-    <input type="submit" value="Guardar" class="button">
+    <input type="submit" value="Iniciar Sesión" class="button">
+  </form><br>
+
+  <form id="formCerrarSesion" action="/cerrarSesion" style="display: none;">
+    <h3>Cuenta</h3>
+    <ul>
+      <li>
+        <p id="sesionIniciada" class="minus">%SESION%</p>
+      </li>
+    </ul>
+    <br>
+    <input type="submit" value="Cerrar Sesión" class="button2">
   </form><br>
 
   <script>
@@ -103,6 +106,15 @@
           select.appendChild(opt);
         }
     }
+
+    if(document.getElementById('sesionIniciada').innerText != ""){
+      document.getElementById('formIniciarSesion').style.display = 'none';
+      document.getElementById('formCerrarSesion').style.display = 'block';
+    } else{
+      document.getElementById('formIniciarSesion').style.display = 'block';
+      document.getElementById('formCerrarSesion').style.display = 'none';
+    }
+    
   </script> 
 
 </body>
