@@ -28,7 +28,7 @@ Future<void> showMyDialog(context, title, text) async {
   );
 }
 
-Future<void> showLoadingDialog(context) async {
+Future<void> showLoadingDialog(context, texto) async {
   return showDialog<void>(
     context: context,
     barrierDismissible: false, // user must tap button!
@@ -37,7 +37,7 @@ Future<void> showLoadingDialog(context) async {
         content: Row(
         children: [
           const CircularProgressIndicator(),
-          Container(margin: const EdgeInsets.only(left: 20),child: const Text("Iniciando Sesión..." )),
+          Container(margin: const EdgeInsets.only(left: 20),child: Text(texto)),
         ],),
         
       );

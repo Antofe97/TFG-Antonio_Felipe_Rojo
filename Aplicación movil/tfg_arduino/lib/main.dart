@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:tfg_arduino/screens/login_screen.dart';
+import 'package:flutter_phoenix/flutter_phoenix.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(Phoenix(
+    child: const MyApp()
+  ));
 }
 
 class MyApp extends StatelessWidget {

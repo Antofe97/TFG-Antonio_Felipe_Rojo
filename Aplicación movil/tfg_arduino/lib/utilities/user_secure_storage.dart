@@ -11,6 +11,14 @@ class UserSecureStorage {
     await _storage.write(key: _keyPassword, value: password);
   }
   
+  static Future<String?> setDNI(dni) async {
+    await _storage.write(key: _keyEmail, value: dni);
+  }
+  
+  static Future<String?> setPassword(password) async {
+    await _storage.write(key: _keyPassword, value: password);
+  }
+  
   static Future<String?> getEmail() async =>
     await _storage.read(key: _keyEmail);
 

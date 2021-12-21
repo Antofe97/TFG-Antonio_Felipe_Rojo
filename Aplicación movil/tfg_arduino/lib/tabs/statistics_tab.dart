@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
 import 'package:tfg_arduino/utilities/alert_dialogs.dart';
 import 'package:tfg_arduino/utilities/user_secure_storage.dart';
+import 'package:tfg_arduino/utilities/date_time_picker.dart';
 import 'package:mysql1/mysql1.dart';
 import 'package:charts_flutter/flutter.dart' as charts;
 
-import 'package:intl/intl.dart';
 
 //import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 
@@ -25,6 +25,13 @@ class _StatisticsTabState extends State<StatisticsTab> {
   late String _email;
   late Future<List<StatisticsSeries>> _future;
 
+  //Estilos TextButtons Filtros
+  List<bool> isSelected = List.generate(5, (index) => false);
+
+  //Controller botones rango fechas
+  late TextEditingController controllerFrom;
+  
+  late TextEditingController controllerUntil;
 
   late DateTime untilDate;
   late DateTime fromDate;
@@ -42,8 +49,43 @@ class _StatisticsTabState extends State<StatisticsTab> {
     untilDate = DateTime.now();
     fromDate = DateTime(untilDate.year, untilDate.month, untilDate.day, untilDate.hour - 1, untilDate.minute, untilDate.second);
 
+    //Primer boton de los filtros seleccionado
+    isSelected[0] = true;
+
+    //Controller botones rango fechas
+    controllerFrom = TextEditingController();
+    controllerUntil = TextEditingController();
+
+    controllerFrom.addListener(() {
+      if(controllerFrom.text.isNotEmpty && controllerUntil.text.isNotEmpty){
+        fromDate = DateTime.parse(controllerFrom.text);
+        untilDate = DateTime.parse(controllerUntil.text);
+        setState(() {
+        _future = obtenerMediciones(context, _email, fromDate, untilDate);
+        });
+      }
+    });
+    controllerUntil.addListener(() {
+      if(controllerFrom.text.isNotEmpty && controllerUntil.text.isNotEmpty){
+        fromDate = DateTime.parse(controllerFrom.text);
+        untilDate = DateTime.parse(controllerUntil.text);
+        setState(() {
+        _future = obtenerMediciones(context, _email, fromDate, untilDate);
+        });
+      }
+    });
+
 
     _future = userLoged();//obtenerMediciones(context, emailController.text);
+  }
+
+  @override
+  void dispose(){
+    controllerFrom.removeListener(() { });
+    controllerFrom.dispose();
+    controllerUntil.removeListener(() { });
+    controllerUntil.dispose();
+    super.dispose();
   }
 
   Future<List<StatisticsSeries>> userLoged() async {
@@ -127,21 +169,54 @@ class _StatisticsTabState extends State<StatisticsTab> {
         Card(
           child: Column(
             children: <Widget>[
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  TextButton(onPressed: () => {refresh(1)}, child: const Text('1H')),
-                  TextButton(onPressed: () => {refresh(2)}, child: const Text('1D')),
-                  TextButton(onPressed: () => {refresh(3)}, child: const Text('1S')),
-                  TextButton(onPressed: () => {refresh(4)}, child: const Text('1M')),
-                  TextButton(onPressed: () => {refresh(5)}, child: const Text('1A')),
-                ],
-              ),
-              Row(
-                children: <Widget>[
-                  DateTimePicker(),
-                ],
-              ),
+              //Row(
+                //mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                //children: [
+                ToggleButtons(children: const <Widget> [
+                    Padding(padding: EdgeInsets.symmetric(horizontal: 23), child: Text('1H', style: TextStyle(fontSize: 20))),
+                    Padding(padding: EdgeInsets.symmetric(horizontal: 23), child: Text('1D', style: TextStyle(fontSize: 20))),
+                    Padding(padding: EdgeInsets.symmetric(horizontal: 23), child: Text('1S', style: TextStyle(fontSize: 20))),
+                    Padding(padding: EdgeInsets.symmetric(horizontal: 23), child: Text('1M', style: TextStyle(fontSize: 20))),
+                    Padding(padding: EdgeInsets.symmetric(horizontal: 23), child: Text('1A', style: TextStyle(fontSize: 20))),
+                  ], 
+                  onPressed: (int index) {
+                    setState(() {
+                      if(!isSelected[index]){
+                        for (int buttonIndex = 0; buttonIndex < isSelected.length; buttonIndex++) {
+                          if (buttonIndex == index) {
+                            isSelected[buttonIndex] = !isSelected[buttonIndex];
+                          } else {
+                            isSelected[buttonIndex] = false;
+                          }
+                        }
+                      }
+                    });
+                    refresh(index);
+                  },
+                  isSelected: isSelected,
+                  color: Colors.grey,
+                  selectedColor: Colors.blue,
+                  renderBorder: false,
+                  fillColor: Colors.white,
+                  splashColor: Colors.white,
+                  
+
+                ),
+                  
+                //],
+              //),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children:  <Widget>[
+                    const Text('De'),
+                    DateTimePicker(controller: controllerFrom),
+                    const Text('A'),
+                    DateTimePicker(controller: controllerUntil),
+                  ],
+                  ),
+              )
             ],
           )
         )
@@ -175,11 +250,11 @@ class _StatisticsTabState extends State<StatisticsTab> {
   }
 
   buildStatisticsChart(BuildContext context, List<StatisticsSeries> mediciones) {
-    List<charts.Series<StatisticsSeries, int>> series = [
+    List<charts.Series<StatisticsSeries, DateTime>> series = [
       charts.Series(
         id: "Mediciones",
         data: mediciones,
-        domainFn: (StatisticsSeries series, _) => series.time.day,
+        domainFn: (StatisticsSeries series, _) => series.time,
         measureFn: (StatisticsSeries series, _) => series.cantidadCO2,
         colorFn: (StatisticsSeries series, _) => series.barColor
       )
@@ -192,12 +267,12 @@ class _StatisticsTabState extends State<StatisticsTab> {
           padding: const EdgeInsets.all(8.0),
           child: Column(
             children: <Widget>[
-              const Text(
+              /*const Text(
                 "Cantidad de CO2 por día",
                 //style: Theme.of(context).textTheme.bodyText2,
-              ),
+              ),*/
               Expanded(
-                child: charts.LineChart(series, animate: true, behaviors: [charts.PanAndZoomBehavior()],),
+                child: charts.TimeSeriesChart(series, animate: true, dateTimeFactory: const charts.LocalDateTimeFactory(),),//behaviors: [charts.PanAndZoomBehavior()],),
               )
             ],
           ),
@@ -212,63 +287,89 @@ class _StatisticsTabState extends State<StatisticsTab> {
   Future refresh(button) async {
     setState(() {
       untilDate = DateTime.now();
-      if(button == 1){fromDate = DateTime(untilDate.year, untilDate.month, untilDate.day, untilDate.hour - 1, untilDate.minute, untilDate.second);}
-      if(button == 2){fromDate = DateTime(untilDate.year, untilDate.month, untilDate.day - 1, untilDate.hour, untilDate.minute, untilDate.second);}
-      if(button == 3){fromDate = DateTime(untilDate.year, untilDate.month, untilDate.day - 7, untilDate.hour, untilDate.minute, untilDate.second);}
-      if(button == 4){fromDate = DateTime(untilDate.year, untilDate.month - 1, untilDate.day, untilDate.hour, untilDate.minute, untilDate.second);}
-      if(button == 5){fromDate = DateTime(untilDate.year - 1, untilDate.month, untilDate.day, untilDate.hour, untilDate.minute, untilDate.second);}
+      if(button == 0){fromDate = DateTime(untilDate.year, untilDate.month, untilDate.day, untilDate.hour - 1, untilDate.minute, untilDate.second);}
+      if(button == 1){fromDate = DateTime(untilDate.year, untilDate.month, untilDate.day - 1, untilDate.hour, untilDate.minute, untilDate.second);}
+      if(button == 2){fromDate = DateTime(untilDate.year, untilDate.month, untilDate.day - 7, untilDate.hour, untilDate.minute, untilDate.second);}
+      if(button == 3){fromDate = DateTime(untilDate.year, untilDate.month - 1, untilDate.day, untilDate.hour, untilDate.minute, untilDate.second);}
+      if(button == 4){fromDate = DateTime(untilDate.year - 1, untilDate.month, untilDate.day, untilDate.hour, untilDate.minute, untilDate.second);}
       _future = obtenerMediciones(context, _email, fromDate, untilDate);
     });
   }
 
 
-Future<List<StatisticsSeries>> obtenerMediciones(context, email, fromDate, untilDate) async {
-  List<StatisticsSeries> data = [];
+  Future<List<StatisticsSeries>> obtenerMediciones(context, email, fromDate, untilDate) async {
+    List<StatisticsSeries> data = [];
 
-  var settings = ConnectionSettings(
-    host: 'tfgarduino.ddns.net', 
-    port: 1234,
-    user: 'antonio',
-    password: 'password',
-    db: 'TFG_ARDUINO'
-  );
+    var settings = ConnectionSettings(
+      host: 'tfgarduino.ddns.net', 
+      port: 1234,
+      user: 'arduino',
+      password: 'Arduino.1234',
+      db: 'TFG_ARDUINO'
+    );
+    int confLowCO2 = 0;
+    int confHighCO2 = 0;
+    try{
+      print('SENTENCIA SQL');
+      print(email);
+      print(fromDate.toString());
+      print(untilDate.toString());
+      var conn = await MySqlConnection.connect(settings);
+      //var results = await conn.query("SELECT * FROM medicion WHERE alumno = ? AND fecha BETWEEN ? AND ?", [email, fromDate.toString(), untilDate.toString()]);
+      var configuracion = await conn.query("SELECT * FROM configuracion WHERE alumno = ?" , [email]);
+      for (var row in configuracion){
+        confLowCO2 = row[0];
+        confHighCO2 = row[1];
+      }
+      var results;
+      if(fromDate.difference(untilDate).inHours <= 1){
+        results = await conn.query("SELECT ROUND(AVG(co2), 0) DIV 1, STR_TO_DATE(left(fecha, 16), '%Y-%m-%d %H:%i:%s') FROM medicion WHERE alumno = ? AND fecha BETWEEN ? AND ? GROUP BY STR_TO_DATE(left(fecha, 16), '%Y-%m-%d %H:%i:%s')", [email, fromDate.toString(), untilDate.toString()]);
+      } else if(fromDate.difference(untilDate).inDays <= 1){
+        results = await conn.query("SELECT ROUND(AVG(co2), 0) DIV 1, STR_TO_DATE(left(fecha, 15), '%Y-%m-%d %H:%i:%s') FROM medicion WHERE alumno = ? AND fecha BETWEEN ? AND ? GROUP BY STR_TO_DATE(left(fecha, 16), '%Y-%m-%d %H:%i:%s')", [email, fromDate.toString(), untilDate.toString()]);
 
-  try{
-    print('SENTENCIA SQL');
-    print(email);
-    print(fromDate.toString());
-    print(untilDate.toString());
-    var conn = await MySqlConnection.connect(settings);
-    var results = await conn.query("SELECT * FROM medicion WHERE alumno = ? AND fecha BETWEEN ? AND ?", [email, fromDate.toString(), untilDate.toString()]);
-    if(results.isNotEmpty){
-      minimo = results.first[0];
-      media = 0;
-      maximo = results.first[0];
-    } else {
-      minimo = 0;
-      media = 0;
-      maximo = 0;
+      } else if(fromDate.difference(untilDate).inDays <= 7){
+        results = await conn.query("SELECT ROUND(AVG(co2), 0) DIV 1, STR_TO_DATE(left(fecha, 14), '%Y-%m-%d %H:%i:%s') FROM medicion WHERE alumno = ? AND fecha BETWEEN ? AND ? GROUP BY STR_TO_DATE(left(fecha, 16), '%Y-%m-%d %H:%i:%s')", [email, fromDate.toString(), untilDate.toString()]);
+      } else if(fromDate.difference(untilDate).inDays <= 30){
+        results = await conn.query("SELECT ROUND(AVG(co2), 0) DIV 1, STR_TO_DATE(left(fecha, 13), '%Y-%m-%d %H:%i:%s') FROM medicion WHERE alumno = ? AND fecha BETWEEN ? AND ? GROUP BY STR_TO_DATE(left(fecha, 16), '%Y-%m-%d %H:%i:%s')", [email, fromDate.toString(), untilDate.toString()]);
+
+      } else {
+        results = await conn.query("SELECT ROUND(AVG(co2), 0) DIV 1, STR_TO_DATE(left(fecha, 12), '%Y-%m-%d %H:%i:%s') FROM medicion WHERE alumno = ? AND fecha BETWEEN ? AND ? GROUP BY STR_TO_DATE(left(fecha, 16), '%Y-%m-%d %H:%i:%s')", [email, fromDate.toString(), untilDate.toString()]);
+      }
+      //results = await conn.query("SELECT ROUND(AVG(co2), 0) DIV 1, STR_TO_DATE(left(fecha, 16), '%Y-%m-%d %H:%i:%s') FROM medicion WHERE alumno = ? AND fecha BETWEEN ? AND ? GROUP BY STR_TO_DATE(left(fecha, 16), '%Y-%m-%d %H:%i:%s')", [email, fromDate.toString(), untilDate.toString()]);
+      print (results.length);
+      if(results.isNotEmpty){
+        minimo = results.first[0];
+        media = 0;
+        maximo = results.first[0];
+      } else {
+        minimo = 0;
+        media = 0;
+        maximo = 0;
+      }
+      for (var row in results) {
+        if(row[0] < minimo){ minimo = row[0];}
+        if(row[0] > maximo){ maximo = row[0];}
+        media = media + row[0] as int;
+        
+        if(row[0] >= confHighCO2){data.add(StatisticsSeries(cantidadCO2: row[0], time: row[1], barColor: charts.ColorUtil.fromDartColor(Colors.red)));}
+        else if (row[0] >= confLowCO2) {data.add(StatisticsSeries(cantidadCO2: row[0], time: row[1], barColor: charts.ColorUtil.fromDartColor(Colors.orange)));}
+        else {data.add(StatisticsSeries(cantidadCO2: row[0], time: row[1], barColor: charts.ColorUtil.fromDartColor(Colors.blue)));}
+        
+      }
+      if(results.isNotEmpty){
+      media = (media/results.length).round();
+      }
+      await conn.close();
+      setState(() {});
+      return data;
+    } on SocketException catch (e){
+      print('Error caught: $e');
+      //Navigator.pop(context);
+      showMyDialog(context, 'No se ha podido conectar', 'Error al conectar con la base de datos. Vuelve a intentarlo mas tarde');
+      
     }
-    for (var row in results) {
-      if(row[0] < minimo){ minimo = row[0];}
-      if(row[0] > maximo){ maximo = row[0];}
-      media = media + row[0] as int;
-      data.add(StatisticsSeries(cantidadCO2: row[0], time: row[1], barColor: charts.ColorUtil.fromDartColor(Colors.blue)));
-    }
-    if(results.isNotEmpty){
-    media = (media/results.length).round();
-    }
-    print(media);
-    await conn.close();
     return data;
-  } on SocketException catch (e){
-    print('Error caught: $e');
-    Navigator.pop(context);
-    showMyDialog(context, 'No se ha podido conectar', 'Error al conectar con la base de datos. Vuelve a intentarlo mas tarde');
-    
   }
-  return data;
-}
 
 
 }
@@ -341,83 +442,3 @@ class StatisticsSeries {
   );
 }
 
-class DateTimePicker extends StatefulWidget {
-  const DateTimePicker({ Key? key }) : super(key: key);
-
-  @override
-  _DateTimePickerState createState() => _DateTimePickerState();
-}
-
-class _DateTimePickerState extends State<DateTimePicker> {
-  DateTime dateTime = DateTime.now();
-
-  Widget getText() {
-    if (dateTime == null) {
-      return const Text('Seleccionar Fecha');
-    } else {
-      return Text(DateFormat('dd/MM/yyyy HH:mm').format(dateTime));
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton(
-      onPressed: () { pickDateTime(context); }, 
-      child: getText()
-    );
-  }
-
-  void pickDateTime(BuildContext context) async {
-    final date = await pickDate(context);
-    if (date == null) return;
-
-    final time = await pickTime(context);
-    if (time == null) return;
-    
-    setState(() {
-      dateTime = DateTime(
-        date.year,
-        date.month,
-        date.day,
-        time.hour,
-        time.minute,
-      );
-    });
-  }
-
-  //Future<DateTime> pickDate(BuildContext context) async {
-  Future pickDate(BuildContext context) async {
-    //final initialDate = DateTime.now();
-    final newDate = await showDatePicker(
-      context: context,
-      locale: const Locale("es", "ES"),
-      
-      initialDate: dateTime,//??initialDate,
-      firstDate: DateTime(DateTime.now().year - 5),
-      lastDate: DateTime(DateTime.now().year + 5),
-    );
-
-    if (newDate == null) return null;
-
-    return newDate;
-  }
-
-  Future pickTime(BuildContext context) async {
-    //final initialTime = TimeOfDay.now();
-    final newTime = await showTimePicker(
-      context: context,
-      builder: (context, child){
-        return Localizations.override(
-          context: context,
-          locale: const Locale('es', 'ES'),
-          child: child,
-        );
-      },
-      initialTime: TimeOfDay(hour: dateTime.hour, minute: dateTime.minute)
-    );
-
-    if (newTime == null) return null;
-
-    return newTime;
-  }
-}
