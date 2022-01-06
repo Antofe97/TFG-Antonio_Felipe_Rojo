@@ -25,8 +25,8 @@ class _MainScreenState extends State<MainScreen> {
     ProfileTab()
   ];
 
-  static const List<Color> _colorOptions = [Colors.red, Colors.green, Colors.blue];
-  static const List<Text> _titles = [Text('Estadísticas'), Text('Arduino'), Text('Perfil')];
+  static const List<Color> _colorOptions = [Color(0xFF5967ff), Color(0xFF5967ff), Color(0xFF5967ff)];
+  static const List<Text> _titles = [Text('Estadísticas', style: TextStyle(fontFamily: 'QuickSand', fontWeight: FontWeight.bold)), Text('Arduino', style: TextStyle(fontFamily: 'QuickSand', fontWeight: FontWeight.bold)), Text('Perfil', style: TextStyle(fontFamily: 'QuickSand', fontWeight: FontWeight.bold))];
 
   void _onItemTapped(int index) {
     setState(() {
@@ -53,13 +53,15 @@ class _MainScreenState extends State<MainScreen> {
           ),
           bottomNavigationBar: BottomNavigationBar(
             type: BottomNavigationBarType.shifting,
+            selectedLabelStyle: TextStyle(fontFamily: 'Quicksand', fontWeight: FontWeight.bold),
             items: const <BottomNavigationBarItem>[
-              BottomNavigationBarItem(icon: Icon(Icons.show_chart_rounded), label: 'Estadísticas', backgroundColor: Colors.red,),
-              BottomNavigationBarItem(icon: Icon(Icons.developer_board), label: 'Arduino', backgroundColor: Colors.green,),
-              BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Perfil', backgroundColor: Colors.blue,),
+              BottomNavigationBarItem(icon: Icon(Icons.show_chart_rounded, ), label: 'Estadísticas', backgroundColor: Color(0xFF5967ff), ),
+              BottomNavigationBarItem(icon: Icon(Icons.developer_board, ), label: 'Arduino', backgroundColor: Color(0xFF5967ff),),
+              BottomNavigationBarItem(icon: Icon(Icons.person, ), label: 'Perfil', backgroundColor: Color(0xFF5967ff),),
               ],
               currentIndex: _selectedIndex,
-              selectedItemColor: Colors.amber[800],
+              selectedItemColor: Colors.white,
+              unselectedItemColor: Colors.white54,
               onTap: _onItemTapped,
           ),
         )
@@ -71,15 +73,15 @@ class _MainScreenState extends State<MainScreen> {
       context: context,
       builder: (context) => AlertDialog(
         //title: const Text(''),
-        content: const Text('¿Quieres cerrar la aplicación?'),
+        content: const Text('¿Quieres cerrar la aplicación?', style: TextStyle(fontFamily: 'Quicksand')),
         actions: <Widget>[
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('No'),
+            child: const Text('No', style: TextStyle(fontFamily: 'Quicksand')),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Sí'),
+            child: const Text('Sí', style: TextStyle(fontFamily: 'Quicksand')),
           ),
         ],
       ),

@@ -25,7 +25,7 @@ class _DateTimePickerState extends State<DateTimePicker> {
   
   Widget getText() {
     if (!dateSelected) {
-      return const Text('Seleccionar Fecha');
+      return const Text('Seleccionar Fecha',style: TextStyle(fontFamily: 'Quicksand'),);
     } else {
       return Text(DateFormat('dd/MM/yyyy HH:mm').format(dateTime));
     }
@@ -33,9 +33,11 @@ class _DateTimePickerState extends State<DateTimePicker> {
 
   @override
   Widget build(BuildContext context) {
-    return ElevatedButton(
-      onPressed: () { pickDateTime(context); }, 
-      child: getText()
+    return ElevatedButton.icon(
+      onPressed: () { pickDateTime(context); },
+      icon: const Icon(Icons.calendar_today, size: 20,), 
+      label: getText(),
+      style: ButtonStyle(backgroundColor: MaterialStateProperty.all(const Color(0xFF5967ff),)),
     );
   }
 

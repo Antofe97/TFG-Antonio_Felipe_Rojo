@@ -21,19 +21,19 @@ class _CustomTextFieldState extends State<CustomTextField> {
     return TextField(
               controller: widget.controlador,
               obscureText: widget.obscureText,
-              cursorColor: Colors.white,
-              style: const TextStyle(color: Colors.white),
+              cursorColor: Color(0xFF5967ff),
+              style: const TextStyle(color: Color(0xFF5967ff)),
               decoration: InputDecoration(
                 filled: true,
-                fillColor: const Color(0xFF5967ff),//Color(0xFF5180ff),
+                //fillColor: const Color(0xFF5967ff),//Color(0xFF5180ff),
                 hintText: widget.hintText,
                 prefixIcon: widget.prefixedIcon,
-                enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.transparent), borderRadius: BorderRadius.all(Radius.circular(12))),
+                enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF5967ff)), borderRadius: BorderRadius.all(Radius.circular(12))),
                 //border: OutlineInputBorder(borderSide: BorderSide(color: Colors.red), borderRadius: BorderRadius.all(Radius.circular(12))),
                 labelText: widget.labelText,
-                focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.white, width: 2), borderRadius: BorderRadius.all(Radius.circular(12))),
-                labelStyle: const TextStyle(color: Colors.white, fontSize: 18),
-                hintStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.w300),
+                focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF5967ff), width: 2), borderRadius: BorderRadius.all(Radius.circular(12))),
+                labelStyle: const TextStyle(color: Color(0xFF5967ff), fontSize: 18, fontFamily: 'Quicksand', fontWeight: FontWeight.w600),
+                hintStyle: const TextStyle(color: Color(0xFF5967ff), fontWeight: FontWeight.w500, fontFamily: 'Quicksand', ),
                 
                 //border: InputBorder.none,
 

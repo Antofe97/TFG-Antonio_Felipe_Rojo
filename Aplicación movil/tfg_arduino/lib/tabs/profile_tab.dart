@@ -8,6 +8,8 @@ import 'dart:io';
 import 'package:mysql1/mysql1.dart';
 import 'package:tfg_arduino/utilities/alert_dialogs.dart';
 
+import 'package:tfg_arduino/components/custom_text_field.dart';
+
 class ProfileTab extends StatefulWidget {
   const ProfileTab({ Key? key }) : super(key: key);
 
@@ -101,34 +103,50 @@ class _ProfileTabState extends State<ProfileTab> {
               children: <Widget>[
                 const Align(
                   alignment: Alignment.centerLeft,
-                  child: Text('Datos alumno', style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold))
+                  child: Text('Datos alumno', style: TextStyle(
+                              fontSize: 30,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'Quicksand'))
                 ),
                 Padding(padding: const EdgeInsets.symmetric(vertical: 10),  
-                child: TextField(
-              controller: dniController,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                labelText: 'DNI'
-              ),
-            ),),
+                child: CustomTextField(
+                      obscureText: false,
+                      labelText: 'DNI',
+                      controlador: dniController,
+                    ),),
                 Padding(padding: const EdgeInsets.symmetric(vertical: 10),  
-                child: TextField(
-              controller: nombreController,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                labelText: 'Nombre'
-              ),
-            ),),
-                Padding(padding: const EdgeInsets.symmetric(vertical: 10), child: TextField(
-              controller: apellidosController,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                labelText: 'Apellidos'
-              )
-            ),),
+                child: CustomTextField(
+                      obscureText: false,
+                      labelText: 'Nombre',
+                      controlador: nombreController,
+                    )),
+                Padding(padding: const EdgeInsets.symmetric(vertical: 10), child: CustomTextField(
+                      obscureText: false,
+                      labelText: 'Apellidos',
+                      controlador: apellidosController,
+                    )),
             ElevatedButton(
           onPressed: () { updatePerfil(dniController.text, nombreController.text, apellidosController.text); }, 
-          child: const Text('Guardar')
+          child: const Padding(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 40, vertical: 10),child: Text('Guardar', style: TextStyle(
+                              fontSize: 17,
+                              color: Colors.white,
+                              fontFamily: 'Quicksand',
+                              fontWeight: FontWeight.bold))),
+          style: ButtonStyle(
+                    backgroundColor: MaterialStateProperty.all(
+                      const Color(0xFF5967ff),
+                    ),
+                    elevation: MaterialStateProperty.all(6),
+                    shape: MaterialStateProperty.all(
+                      const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.all(
+                          Radius.circular(15.0),
+                        ),
+                      ),
+                    ),
+                  )
           ),
 
               ],
@@ -141,30 +159,26 @@ class _ProfileTabState extends State<ProfileTab> {
               children: <Widget>[
                 const Align(
                   alignment: Alignment.centerLeft,
-                  child: Text('Cambiar contraseña', style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold))
+                  child: Text('Cambiar contraseña', style: TextStyle(
+                              fontSize: 30,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'Quicksand'))
                 ),
-                Padding(padding: const EdgeInsets.symmetric(vertical: 10),  
-                child: TextField(
-              controller: passwordController,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                labelText: 'Contraseña actual'
-              ),
-            ),),
-                Padding(padding: const EdgeInsets.symmetric(vertical: 10), child: TextField(
-              controller: newPasswordController,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                labelText: 'Contraseña nueva'
-              ),
-            ),),
-            Padding(padding: const EdgeInsets.symmetric(vertical: 10), child: TextField(
-              controller: repNewPasswordController,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                labelText: 'Repetir contraseña nueva'
-              ),
-            ),),
+                Padding(padding: const EdgeInsets.symmetric(vertical: 10), child: CustomTextField(
+                      obscureText: false,
+                      labelText: 'Contraseña actual',
+                      controlador: passwordController,
+                    )),
+                Padding(padding: const EdgeInsets.symmetric(vertical: 10), child: CustomTextField(
+                      obscureText: false,
+                      labelText: 'Nueva contraseña ',
+                      controlador: newPasswordController,
+                    )),
+                Padding(padding: const EdgeInsets.symmetric(vertical: 10), child: CustomTextField(
+                      obscureText: false,
+                      labelText: 'Repetir nueva contraseña',
+                      controlador: repNewPasswordController,
+                    )),
             ElevatedButton(
           onPressed: () { 
             if(passwordController.text == "" || newPasswordController.text == "" || repNewPasswordController.text == ""){
@@ -178,7 +192,26 @@ class _ProfileTabState extends State<ProfileTab> {
             updatePassword(newPasswordController.text); 
             }
             }, 
-          child: const Text('Guardar')
+          child: const Padding(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 40, vertical: 10),child: Text('Guardar', style: TextStyle(
+                              fontSize: 17,
+                              color: Colors.white,
+                              fontFamily: 'Quicksand',
+                              fontWeight: FontWeight.bold))),
+          style: ButtonStyle(
+                    backgroundColor: MaterialStateProperty.all(
+                      const Color(0xFF5967ff),
+                    ),
+                    elevation: MaterialStateProperty.all(6),
+                    shape: MaterialStateProperty.all(
+                      const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.all(
+                          Radius.circular(15.0),
+                        ),
+                      ),
+                    ),
+                  )
           ),
 
               ],
@@ -186,9 +219,28 @@ class _ProfileTabState extends State<ProfileTab> {
           )),
           ElevatedButton(
           onPressed: () { _cerrarSesionDialog(); }, 
-          child: const Text('Cerrar Sesión')
+          child: const Padding(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 40, vertical: 10),child: Text('Cerrar Sesión', style: TextStyle(
+                              fontSize: 17,
+                              color: Colors.white,
+                              fontFamily: 'Quicksand',
+                              fontWeight: FontWeight.bold))),
+          style: ButtonStyle(
+                    backgroundColor: MaterialStateProperty.all(
+                      const Color(0xFF5967ff),
+                    ),
+                    elevation: MaterialStateProperty.all(6),
+                    shape: MaterialStateProperty.all(
+                      const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.all(
+                          Radius.circular(15.0),
+                        ),
+                      ),
+                    ),
+                  )
           ),
-          TextButton(onPressed: () {eliminarPerfil();}, child: const Text('Eliminar cuenta', style: TextStyle(color: Colors.red),))
+          TextButton(onPressed: () {eliminarPerfil();}, child: const Text('Eliminar cuenta', style: TextStyle(fontFamily: 'Quicksand', color: Colors.red),))
         ],
       ),
     );
@@ -203,15 +255,15 @@ class _ProfileTabState extends State<ProfileTab> {
       context: context,
       builder: (context) => AlertDialog(
         //title: const Text(''),
-        content: const Text('¿Seguro que quieres cerrar sesión?'),
+        content: const Text('¿Seguro que quieres cerrar sesión?', style: TextStyle(fontFamily: 'Quicksand')),
         actions: <Widget>[
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('No'),
+            child: const Text('No', style: TextStyle(fontFamily: 'Quicksand')),
           ),
           TextButton(
             onPressed: () => _cerrarSesion(context),
-            child: const Text('Sí'),
+            child: const Text('Sí', style: TextStyle(fontFamily: 'Quicksand')),
           ),
         ],
       ),
@@ -269,7 +321,7 @@ Future updatePassword(newPassword) async {
       await UserSecureStorage.setPassword(newPassword);
 
       const snackBar = SnackBar(
-        content:  Text('Contraseña actualizada correctamente'),
+        content:  Text('Contraseña actualizada correctamente', style: TextStyle(fontFamily: 'Quicksand')),
         backgroundColor: Colors.green,
         behavior: SnackBarBehavior.floating,
         
@@ -281,7 +333,7 @@ Future updatePassword(newPassword) async {
       Navigator.pop(context);
       //showMyDialog(context, 'No se ha podido conectar', 'Error al conectar con la base de datos. Vuelve a intentarlo mas tarde');
       const snackBar =  SnackBar(
-        content: Text('No se ha podido actualizar la contraseña'),
+        content: Text('No se ha podido actualizar la contraseña', style: TextStyle(fontFamily: 'Quicksand')),
         backgroundColor: Colors.red,
         behavior: SnackBarBehavior.floating,
         
@@ -308,18 +360,18 @@ Future updatePassword(newPassword) async {
       context: context,
       builder: (context) => AlertDialog(
         //title: const Text(''),
-        content: const Text('¿Seguro que quieres eliminar tu cuenta?'),
+        content: const Text('¿Seguro que quieres eliminar tu cuenta?', style: TextStyle(fontFamily: 'Quicksand')),
         actions: <Widget>[
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('No'),
+            child: const Text('No', style: TextStyle(fontFamily: 'Quicksand')),
           ),
           TextButton(
             onPressed: () async {
               await conn.query("DELETE FROM alumno WHERE dni = ?", [_email]);
               _cerrarSesion(context);
               },
-            child: const Text('Sí'),
+            child: const Text('Sí', style: TextStyle(fontFamily: 'Quicksand')),
           ),
         ],
       ),

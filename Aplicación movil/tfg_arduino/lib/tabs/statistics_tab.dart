@@ -2,11 +2,14 @@ import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
+import 'package:flutter/rendering.dart';
 import 'package:tfg_arduino/utilities/alert_dialogs.dart';
 import 'package:tfg_arduino/utilities/user_secure_storage.dart';
 import 'package:tfg_arduino/utilities/date_time_picker.dart';
 import 'package:mysql1/mysql1.dart';
 import 'package:charts_flutter/flutter.dart' as charts;
+
+
 
 
 //import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
@@ -136,8 +139,8 @@ class _StatisticsTabState extends State<StatisticsTab> {
             children: <Widget>[
               Column(
                 children: <Widget>[
-                  const Text('Minimo:'),
-                  Text(minimo.toString(), style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold),)
+                  const Text('Mínimo:', style: TextStyle(fontFamily: 'Quicksand', fontSize: 20, fontWeight: FontWeight.w400)),
+                  Text(minimo.toString(), style: const TextStyle(fontFamily: 'Quicksand', fontSize: 40, fontWeight: FontWeight.bold),)
                 ],
               ),
               Container(
@@ -147,8 +150,8 @@ class _StatisticsTabState extends State<StatisticsTab> {
               ),
               Column(
                 children: <Widget>[
-                  const Text('Media:'),
-                  Text(media.toString(), style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold),)
+                  const Text('Media:', style: TextStyle(fontFamily: 'Quicksand', fontSize: 20, fontWeight: FontWeight.w400)),
+                  Text(media.toString(), style: const TextStyle(fontFamily: 'Quicksand', fontSize: 40, fontWeight: FontWeight.bold),)
                 ],
               ),
               Container(
@@ -158,8 +161,8 @@ class _StatisticsTabState extends State<StatisticsTab> {
               ),
               Column(
                 children:  <Widget>[
-                  const Text('Maximo:'),
-                  Text(maximo.toString(), style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold),)
+                  const Text('Máximo:', style: TextStyle(fontFamily: 'Quicksand', fontSize: 20, fontWeight: FontWeight.w400)),
+                  Text(maximo.toString(), style: const TextStyle(fontFamily: 'Quicksand', fontSize: 40, fontWeight: FontWeight.bold),)
                 ],
               )
             ],
@@ -173,11 +176,11 @@ class _StatisticsTabState extends State<StatisticsTab> {
                 //mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 //children: [
                 ToggleButtons(children: const <Widget> [
-                    Padding(padding: EdgeInsets.symmetric(horizontal: 23), child: Text('1H', style: TextStyle(fontSize: 20))),
-                    Padding(padding: EdgeInsets.symmetric(horizontal: 23), child: Text('1D', style: TextStyle(fontSize: 20))),
-                    Padding(padding: EdgeInsets.symmetric(horizontal: 23), child: Text('1S', style: TextStyle(fontSize: 20))),
-                    Padding(padding: EdgeInsets.symmetric(horizontal: 23), child: Text('1M', style: TextStyle(fontSize: 20))),
-                    Padding(padding: EdgeInsets.symmetric(horizontal: 23), child: Text('1A', style: TextStyle(fontSize: 20))),
+                    Padding(padding: EdgeInsets.symmetric(horizontal: 23), child: Text('1H', style: TextStyle(fontFamily:'Quicksand', fontWeight: FontWeight.bold, fontSize: 20))),
+                    Padding(padding: EdgeInsets.symmetric(horizontal: 23), child: Text('1D', style: TextStyle(fontFamily:'Quicksand', fontWeight: FontWeight.bold, fontSize: 20))),
+                    Padding(padding: EdgeInsets.symmetric(horizontal: 23), child: Text('1S', style: TextStyle(fontFamily:'Quicksand', fontWeight: FontWeight.bold, fontSize: 20))),
+                    Padding(padding: EdgeInsets.symmetric(horizontal: 23), child: Text('1M', style: TextStyle(fontFamily:'Quicksand', fontWeight: FontWeight.bold, fontSize: 20))),
+                    Padding(padding: EdgeInsets.symmetric(horizontal: 23), child: Text('1A', style: TextStyle(fontFamily:'Quicksand', fontWeight: FontWeight.bold, fontSize: 20))),
                   ], 
                   onPressed: (int index) {
                     setState(() {
@@ -195,7 +198,7 @@ class _StatisticsTabState extends State<StatisticsTab> {
                   },
                   isSelected: isSelected,
                   color: Colors.grey,
-                  selectedColor: Colors.blue,
+                  selectedColor: const Color(0xFF5967ff),
                   renderBorder: false,
                   fillColor: Colors.white,
                   splashColor: Colors.white,
@@ -206,13 +209,23 @@ class _StatisticsTabState extends State<StatisticsTab> {
                 //],
               //),
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 20),
+                padding: const EdgeInsets.symmetric(vertical: 5),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children:  <Widget>[
-                    const Text('De'),
+                    const Padding(padding: EdgeInsets.only(right: 10), child: Text('De', style: TextStyle(color: Color(0xFF232323), fontFamily:'Quicksand', fontWeight: FontWeight.bold, fontSize: 14))),
                     DateTimePicker(controller: controllerFrom),
-                    const Text('A'),
+                    
+                  ],
+                  ),
+              ),
+              Icon(Icons.arrow_downward),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children:  <Widget>[
+                    const Padding(padding: EdgeInsets.only(right: 20), child: Text('A', style: TextStyle(color: Color(0xFF232323), fontFamily:'Quicksand', fontWeight: FontWeight.bold, fontSize: 14))),
                     DateTimePicker(controller: controllerUntil),
                   ],
                   ),
@@ -272,7 +285,7 @@ class _StatisticsTabState extends State<StatisticsTab> {
                 //style: Theme.of(context).textTheme.bodyText2,
               ),*/
               Expanded(
-                child: charts.TimeSeriesChart(series, animate: true, dateTimeFactory: const charts.LocalDateTimeFactory(),),//behaviors: [charts.PanAndZoomBehavior()],),
+                child: charts.TimeSeriesChart(series, animate: true, dateTimeFactory: const charts.LocalDateTimeFactory(), behaviors: [charts.PanAndZoomBehavior(),],),
               )
             ],
           ),

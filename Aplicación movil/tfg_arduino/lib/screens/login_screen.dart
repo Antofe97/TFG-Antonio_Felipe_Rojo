@@ -13,6 +13,7 @@ import 'package:tfg_arduino/screens/main_screen.dart';
 import 'package:tfg_arduino/screens/signup_screen.dart';
 import 'package:tfg_arduino/utilities/user_secure_storage.dart';
 import 'package:tfg_arduino/utilities/alert_dialogs.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({ Key? key }) : super(key: key);
@@ -26,10 +27,23 @@ class _LoginScreenState extends State<LoginScreen> {
   final dniController = TextEditingController();
   final passwordController = TextEditingController();
 
+  bool visible = true;
+  Color colorToggle = Colors.grey;
+
+  String? tokenApp;
+
   @override
   void initState() {
     super.initState();
+    FirebaseMessaging messaging = FirebaseMessaging.instance;
+
+    messaging.getToken().then((value){
+      tokenApp = value;
+    });
+
     userLoged();
+
+    
   }
 
   Future userLoged() async {
@@ -41,7 +55,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if(email != null && password != null){
       dniController.text = email.toString();
       passwordController.text = password.toString();
-      connectDB(context, email, password);
+      connectDB(context, email, password, tokenApp);
     }
   }
 
@@ -59,31 +73,16 @@ class _LoginScreenState extends State<LoginScreen> {
         //title: const Text('TFG Arduino')
       //),
       body: AnnotatedRegion<SystemUiOverlayStyle>(
-        value: SystemUiOverlayStyle(statusBarColor: Colors.transparent),
-      child: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Color(0xFF5967ff),
-                Color(0xFF5374ff),
-                Color(0xFF5180ff),
-                Color(0xFF538bff),
-                Color(0xFF5995ff),
-              ],
-            ),
-          ),
-        //color: const Color(0xff5a9bef),
-        child: SingleChildScrollView(
+        value: const SystemUiOverlayStyle(statusBarColor: Colors.transparent, statusBarIconBrightness: Brightness.dark, systemStatusBarContrastEnforced: true, systemNavigationBarColor: Color(0xFF5967ff), ),
+      child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 45.0, vertical: 50),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            const Padding(padding: EdgeInsets.symmetric(vertical: 40), child: Text('Iniciar Sesión', style: TextStyle(color: Colors.white, fontSize: 35.0, fontFamily: 'OpenSans'))),
+            const Image(image: AssetImage('assets/images/LogoUCLM.svg.png'), height: 130,),
+            const Padding(padding: EdgeInsets.only(top: 10), child: Text('TFG ARDUINO', style: TextStyle(color: Color(0xFFabb5be), fontSize: 16,fontFamily: 'Quicksand', fontWeight: FontWeight.w700))),
+            const Padding(padding: EdgeInsets.symmetric(vertical: 40), child: Text('Iniciar Sesión', style: TextStyle(color: Color(0xFF35424a), fontSize: 36.0, fontFamily: 'Quicksand', fontWeight: FontWeight.bold))),
             /*const Align(
               alignment: Alignment.centerLeft,
               child: Padding(padding: EdgeInsets.only(left: 5, bottom: 5),child: Text('DNI', style: TextStyle(color: Colors.white, fontSize: 16))),
@@ -92,19 +91,19 @@ class _LoginScreenState extends State<LoginScreen> {
             
             TextField(
               controller: dniController,
-              cursorColor: Colors.white,
-              style: const TextStyle(color: Colors.white),
+              cursorColor: const Color(0xFF5967ff),
+              style: const TextStyle(color: Color(0xFF5967ff)),
               decoration: const InputDecoration(
                 filled: true,
-                fillColor: Color(0xFF5967ff),//Color(0xFF5180ff),
+                //fillColor: Color(0xFF5967ff),//Color(0xFF5180ff),
                 hintText: 'Introducir DNI',
-                prefixIcon: Icon(Icons.person, color: Colors.white),
-                enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.transparent), borderRadius: BorderRadius.all(Radius.circular(12))),
+                prefixIcon: Icon(Icons.person, color: Color(0xFF5967ff)),
+                enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF5967ff)), borderRadius: BorderRadius.all(Radius.circular(12))),
                 //border: OutlineInputBorder(borderSide: BorderSide(color: Colors.red), borderRadius: BorderRadius.all(Radius.circular(12))),
                 labelText: 'DNI',
-                focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white, width: 2), borderRadius: BorderRadius.all(Radius.circular(12))),
-                labelStyle: TextStyle(color: Colors.white, fontSize: 18),
-                hintStyle: TextStyle(color: Colors.white, fontWeight: FontWeight.w300),
+                focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF5967ff), width: 2), borderRadius: BorderRadius.all(Radius.circular(12))),
+                labelStyle: TextStyle(color: Color(0xFF5967ff), fontFamily: 'Quicksand', fontSize: 18, fontWeight: FontWeight.w600),
+                hintStyle: TextStyle(color: Color(0xFF5967ff), fontFamily: 'Quicksand', fontWeight: FontWeight.w500),
                 
                 //border: InputBorder.none,
 
@@ -114,25 +113,25 @@ class _LoginScreenState extends State<LoginScreen> {
               alignment: Alignment.centerLeft,
               child: Padding(padding: EdgeInsets.only(left: 5, bottom: 5, top: 10),child: Text('Contraseña', style: TextStyle(fontSize: 15))),
             ),*/
-
-            const Padding(padding: EdgeInsets.symmetric(vertical:20)),
+            const Padding(padding: EdgeInsets.symmetric(vertical:17)),
             TextField(
               controller: passwordController,
-              cursorColor: Colors.white,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(
+              cursorColor: const Color(0xFF5967ff),
+              style: const TextStyle(color: Color(0xFF5967ff)),
+              obscureText: visible,
+              decoration: InputDecoration(
                 filled: true,
-                fillColor: Color(0xFF5967ff),//Color(0xFF5180ff),
+                //fillColor: Color(0xFF5967ff),//Color(0xFF5180ff),
                 hintText: 'Introducir contraseña',
-                prefixIcon: Icon(Icons.lock, color: Colors.white),
-                enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.transparent), borderRadius: BorderRadius.all(Radius.circular(12))),
+                prefixIcon: Icon(Icons.lock, color: Color(0xFF5967ff)),
+                enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF5967ff)), borderRadius: BorderRadius.all(Radius.circular(12))),
                 //border: OutlineInputBorder(borderSide: BorderSide(color: Colors.red), borderRadius: BorderRadius.all(Radius.circular(12))),
                 labelText: 'Contraseña',
-                focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white, width: 2), borderRadius: BorderRadius.all(Radius.circular(12))),
-                labelStyle: TextStyle(color: Colors.white, fontSize: 18),
-                hintStyle: TextStyle(color: Colors.white, fontWeight: FontWeight.w300)
+                focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF5967ff), width: 2), borderRadius: BorderRadius.all(Radius.circular(12))),
+                labelStyle: TextStyle(color: Color(0xFF5967ff), fontFamily: 'Quicksand', fontSize: 18, fontWeight: FontWeight.w600),
+                hintStyle: TextStyle(color: Color(0xFF5967ff), fontFamily: 'Quicksand', fontWeight: FontWeight.w500),
                 //border: InputBorder.none,
-
+                suffixIcon: IconButton(icon: visible ? Icon(Icons.visibility) : Icon(Icons.visibility_off), color: Color(0xFF5967ff), onPressed: () { setState((){visible = !visible;});},)
               ),
             ),
             /*TextField(
@@ -147,30 +146,30 @@ class _LoginScreenState extends State<LoginScreen> {
             ElevatedButton(
               style: ButtonStyle(
                 backgroundColor: MaterialStateProperty.all(
-                Colors.white,
+                const Color(0xFF5967ff),
                 ),
                 elevation: MaterialStateProperty.all(6),
                 shape: MaterialStateProperty.all(
                   const RoundedRectangleBorder(
                     borderRadius: BorderRadius.all(
-                    Radius.circular(18.0),
+                    Radius.circular(12.0),
                     ),
                   ),
                 ),
               ),
-              onPressed: () {connectDB(context, dniController.text, passwordController.text);}, 
-              child: const Padding(padding: EdgeInsets.symmetric(horizontal: 80, vertical:10), child: Text('Iniciar Sesión', style: TextStyle(fontSize: 16, color: Colors.blue, fontWeight: FontWeight.w400)))
+              onPressed: () {connectDB(context, dniController.text, passwordController.text, tokenApp);}, 
+              child: const Padding(padding: EdgeInsets.symmetric(horizontal: 80, vertical:17), child: Text('Iniciar Sesión', style: TextStyle(fontSize: 17, color: Colors.white, fontFamily: 'Quicksand', fontWeight: FontWeight.bold)))
             ),
             const Padding(padding: EdgeInsets.symmetric(vertical:10)),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-              const Text('¿No tienes una cuenta?', style: TextStyle(color: Colors.white),),
+              const Text('¿No tienes una cuenta?', style: TextStyle(fontSize: 16, color: Color(0xFFabb5be), fontFamily: 'Quicksand'),),
               const Padding(padding: EdgeInsets.symmetric(horizontal:2)),
               
               TextButton(onPressed: () { 
                 Navigator.push(context, MaterialPageRoute(builder: (context) => SignUpScreen(),),);
-              }, child: const Text('Crear Cuenta', style: TextStyle(fontSize: 17,color: Colors.white, fontWeight: FontWeight.bold),))
+              }, child: const Text('Crear Cuenta', style: TextStyle(fontSize: 17,color: Color(0xFF5967ff), fontFamily: 'Quicksand', fontWeight: FontWeight.bold),))
             ],)
             
             
@@ -179,13 +178,12 @@ class _LoginScreenState extends State<LoginScreen> {
         )
         
       ),
-        )
     )
     );
   }
 }
 
-Future connectDB(context, dni, password) async{
+Future connectDB(context, dni, password, tokenApp) async{
   
   showLoadingDialog(context, "Iniciando Sesión...");
 
@@ -204,6 +202,9 @@ Future connectDB(context, dni, password) async{
     var results = await conn.query('SELECT * FROM alumno WHERE dni = ? AND password = ?', [dni, password]);
 
     if (results.isNotEmpty){
+
+      await conn.query('UPDATE alumno SET token_app = ? WHERE dni = ?', [tokenApp, dni]);
+
       Navigator.pop(context);
       await conn.close();
       await UserSecureStorage.setLoginParameters(dni, password);

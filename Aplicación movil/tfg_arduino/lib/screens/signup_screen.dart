@@ -7,6 +7,8 @@ import 'package:tfg_arduino/utilities/alert_dialogs.dart';
 import 'package:tfg_arduino/utilities/user_secure_storage.dart';
 import 'package:mysql1/mysql1.dart';
 import 'package:flutter_phoenix/flutter_phoenix.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+
 class SignUpScreen extends StatelessWidget {
   SignUpScreen({ Key? key }) : super(key: key);
 
@@ -23,28 +25,12 @@ class SignUpScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color(0xFF5967ff),
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        iconTheme: const IconThemeData(color: Color(0xFF35424a)),
       ),
       body: AnnotatedRegion<SystemUiOverlayStyle>(
-        value: const SystemUiOverlayStyle(statusBarColor: Colors.transparent),
-      child: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Color(0xFF5967ff),
-                Color(0xFF5374ff),
-                Color(0xFF5180ff),
-                Color(0xFF538bff),
-                Color(0xFF5995ff),
-              ],
-            ),
-          ),
-        //color: const Color(0xff5a9bef),
+        value: const SystemUiOverlayStyle(statusBarColor: Colors.transparent, statusBarIconBrightness: Brightness.dark),
         child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 45.0),
         child: Column(
@@ -52,31 +38,31 @@ class SignUpScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             
-            const Padding(padding: EdgeInsets.only(top: 10, bottom: 40), child: Text('Crear Cuenta', style: TextStyle(color: Colors.white, fontSize: 35.0, fontFamily: 'OpenSans'))),
+            const Padding(padding: EdgeInsets.only(top: 10, bottom: 40), child: Text('Crear Cuenta', style: TextStyle(color: Color(0xFF35424a), fontSize: 36.0, fontFamily: 'Quicksand', fontWeight: FontWeight.bold))),
             
-            CustomTextField(obscureText: false,hintText: 'Introducir DNI', labelText: 'DNI', prefixedIcon: Icon(Icons.credit_card, color: Colors.white), controlador: dniController,),
+            CustomTextField(obscureText: false,hintText: 'Introducir DNI', labelText: 'DNI', prefixedIcon: Icon(Icons.credit_card, color: Color(0xFF5967ff)), controlador: dniController,),
           
 
             const Padding(padding: EdgeInsets.symmetric(vertical:10)),
-            CustomTextField(obscureText: false, labelText: 'Nombre', hintText: 'Introducir Nombre', controlador: nombreController, prefixedIcon: Icon(Icons.person, color:Colors.white),),
+            CustomTextField(obscureText: false, labelText: 'Nombre', hintText: 'Introducir Nombre', controlador: nombreController, prefixedIcon: Icon(Icons.person, color: Color(0xFF5967ff)),),
             
             const Padding(padding: EdgeInsets.symmetric(vertical:10)),
-            CustomTextField(obscureText: false, labelText: 'Apellidos', hintText: 'Introducir Apellidos', controlador: apellidosController, prefixedIcon: Icon(Icons.person, color:Colors.white)),
+            CustomTextField(obscureText: false, labelText: 'Apellidos', hintText: 'Introducir Apellidos', controlador: apellidosController, prefixedIcon: Icon(Icons.person, color: Color(0xFF5967ff))),
 
             const Padding(padding: EdgeInsets.symmetric(vertical:10)),
-            Container(width: 150, height: 1, color: Colors.white,),
+            Container(width: 150, height: 1, color: Color(0xFF5967ff),),
 
             const Padding(padding: EdgeInsets.symmetric(vertical:10)),
-            CustomTextField(obscureText: true, labelText: 'Contraseña', hintText: 'Introducir Contraseña', controlador: passwordController, prefixedIcon: Icon(Icons.lock, color: Colors.white,)),
+            CustomTextField(obscureText: true, labelText: 'Contraseña', hintText: 'Introducir Contraseña', controlador: passwordController, prefixedIcon: Icon(Icons.lock, color: Color(0xFF5967ff),)),
 
             const Padding(padding: EdgeInsets.symmetric(vertical:10)),
-            CustomTextField(obscureText: true, labelText: 'Confirmar Contraseña', hintText: 'Vuelve a introducir la contraseña', controlador: passwordConfirmationController, prefixedIcon: Icon(Icons.lock, color: Colors.white),),
+            CustomTextField(obscureText: true, labelText: 'Confirmar Contraseña', hintText: 'Vuelve a introducir la contraseña', controlador: passwordConfirmationController, prefixedIcon: Icon(Icons.lock, color: Color(0xFF5967ff)),),
            
             const Padding(padding: EdgeInsets.symmetric(vertical:20)),
             ElevatedButton(
               style: ButtonStyle(
                 backgroundColor: MaterialStateProperty.all(
-                Colors.white,
+                const Color(0xFF5967ff),
                 ),
                 elevation: MaterialStateProperty.all(6),
                 shape: MaterialStateProperty.all(
@@ -104,18 +90,18 @@ class SignUpScreen extends StatelessWidget {
                   crearCuenta(context);
                 }
                 }, 
-              child: const Padding(padding: EdgeInsets.symmetric(horizontal: 80, vertical:10), child: Text('Crear Cuenta', style: TextStyle(fontSize: 16, color: Colors.blue, fontWeight: FontWeight.w400)))
+              child: const Padding(padding: EdgeInsets.symmetric(horizontal: 80, vertical:17), child: Text('Crear Cuenta', style: TextStyle(fontSize: 17, color: Colors.white, fontFamily: 'Quicksand', fontWeight: FontWeight.bold)))
             ),
             const Padding(padding: EdgeInsets.symmetric(vertical:10)),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-              const Text('¿Ya tienes una cuenta?', style: TextStyle(color: Colors.white),),
+              const Text('¿Ya tienes una cuenta?', style: TextStyle(fontSize: 16, color: Color(0xFFabb5be), fontFamily: 'Quicksand'),),
               const Padding(padding: EdgeInsets.symmetric(horizontal:2)),
               
               TextButton(onPressed: () { 
                 Navigator.pop(context);
-              }, child: const Text('Inicia Sesión', style: TextStyle(fontSize: 17,color: Colors.white, fontWeight: FontWeight.bold),))
+              }, child: const Text('Inicia Sesión', style: TextStyle(fontSize: 17,color: Color(0xFF5967ff), fontFamily: 'Quicksand', fontWeight: FontWeight.bold),))
             ],)
             
             
@@ -124,7 +110,7 @@ class SignUpScreen extends StatelessWidget {
         )
         
       ),
-        )
+
     )
     );
   }
@@ -141,11 +127,25 @@ class SignUpScreen extends StatelessWidget {
       db: 'TFG_ARDUINO'
     );
 
+    String? tokenApp;
+
+    FirebaseMessaging messaging = FirebaseMessaging.instance;
+
+    messaging.getToken().then((value){
+      tokenApp = value;
+    });
+
+    /*FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      // Parse the message received
+        print("NOTIFICACION");
+        print(message.notification?.title);
+        print(message.notification?.body);
+    });^*/
 
     try{
       var conn = await MySqlConnection.connect(settings);
     
-      await conn.query('INSERT INTO TFG_ARDUINO.alumno (dni, nombre, apellidos, password) VALUES (?,?,?,?);', [dniController.text, nombreController.text, passwordController.text, passwordController.text]);
+      await conn.query('INSERT INTO TFG_ARDUINO.alumno (dni, nombre, apellidos, password, token_app) VALUES (?,?,?,?,?);', [dniController.text, nombreController.text, apellidosController.text, passwordController.text, tokenApp]);
       await conn.query('INSERT INTO TFG_ARDUINO.configuracion (co2Low, co2Max, distancia, alumno) VALUES (?,?,?,?);', [600, 1400, 140, dniController.text]);
 
       var cuenta = await conn.query('SELECT * FROM alumno WHERE dni = ?;', [dniController.text]);
