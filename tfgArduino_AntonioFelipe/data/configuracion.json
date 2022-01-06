@@ -7,5 +7,6 @@
   "dni": "",
   "nombre": "",
   "apellidos": "",
-  "alu_password": ""
+  "alu_password": "",
+  "token_app": ""
 }

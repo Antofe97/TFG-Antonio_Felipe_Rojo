@@ -1,3 +1,9 @@
+#include <HTTPClient.h>
+
+#include <TimeLib.h>
+unsigned long previousTime;
+unsigned long actualTime;
+
 //  LED RGB
 #include <Adafruit_NeoPixel.h>
 #define PIN 15
@@ -48,8 +54,10 @@ int conf_distance;
 int conf_co2_mid;
 int conf_co2_max;
 String conf_dni;
+String tokenApp;
 boolean semaforo =true;
 boolean semaforoDB;
+boolean hasWifiParams = false;
 
 TaskHandle_t TaskCheckConnections;
 
@@ -72,6 +80,8 @@ String lectura(const String& var){
     //const char* value = doc["ssid"];
     //const char* value = WiFi.SSID();
     if(WiFi.SSID() != ""){
+      
+      hasWifiParams = true;
           return "Conectado actualmente a: " + WiFi.SSID();
     }
     else{
@@ -145,6 +155,7 @@ boolean comprobarSesion(String dni, String password){
   do {
     row = cur_mem->get_next_row();
     if (row != NULL) {
+        tokenApp = row->values[4];
         delete cur_mem;
         return true;
     }
@@ -181,6 +192,7 @@ String iniciarSesion(String dni, String password){
     DynamicJsonDocument doc = readConFile();
     doc["dni"] = dni;
     doc["alu_password"] = password;
+    doc["token_app"] = tokenApp;
 
     //updateAlumnoDB(dni, nombre, apellidos, password, conf_dni);
     conf_dni = dni;
@@ -387,6 +399,8 @@ void setup() {
   conf_co2_max = doc["co2_max"];
   String cambio = doc["dni"];
   conf_dni = cambio;
+  String cambio2 = doc["token_app"];
+  tokenApp = cambio2;
   ///////////////
   ////////
   xTaskCreatePinnedToCore(
@@ -406,10 +420,15 @@ void setup() {
   display.clearDisplay();
   display.display();
 
+  //Inicialización contador de tiempo para las notificaciones
+  previousTime = millis();
+  
+  
   pixels.begin();
 }
 
 void loop() {
+  
   dnsServer.processNextRequest();
   // Lectura CO2
   int medicionCO2 = analogRead(PIN_SENSOR);
@@ -432,16 +451,25 @@ void loop() {
   //  mensaje = "Distancia\ncorrecta";
   //}
   if (medicionCO2 < conf_co2_mid){
+    
     mensaje = "Calidad aire\ncorrecta";
     pixels.setPixelColor(0, pixels.Color(0,255,0));
     pixels.show();
   }
   if (medicionCO2 > conf_co2_mid && medicionCO2 < conf_co2_max){
+    
     mensaje = "Aire\ncargandose";
     pixels.setPixelColor(0, pixels.Color(255,255,0));
     pixels.show();
   }
   if (medicionCO2 > conf_co2_max){
+    if(tokenApp != ""){
+      actualTime = millis();
+      if(actualTime - previousTime > 300000){ //Solo envia notificación si han pasado 5 minutos desde la anterior
+        enviarNotificacion(medicionCO2);
+        previousTime = actualTime;
+      }
+    }
     mensaje = "Alta\nconcentracion CO2";
     pixels.setPixelColor(0, pixels.Color(255,0,0));
     pixels.show();
@@ -516,7 +544,7 @@ void loop() {
     if(conf_dni != ""){
     if(semaforo){
       semaforo = false;
-        insertMedicionDB(medicionCO2, conf_dni);
+        insertMedicionDB(medicionCO2, medicionDistancia, conf_dni);
         checkConfiguracionDB();
       semaforo = true;
     }
@@ -526,6 +554,18 @@ void loop() {
   
  
   delay(5000); //Actualización cada 5 segundos
+}
+
+void enviarNotificacion(int medicionCO2){
+  Serial.print("Envia notificación. Token: ");
+  Serial.println(tokenApp);
+  HTTPClient http;
+
+  http.begin("https://fcm.googleapis.com/fcm/send");
+  http.addHeader("Content-Type", "application/json");
+  http.addHeader("Authorization", "key=AAAASOggT80:APA91bEaHXHSX73eAPIsqwxWAHE9cWh8bvW18i7OoL-Uyci-7HV0ZpkolfBZU4Mt_Xe-mM21vK-rB7HHPeV-edaAcnTQKKoxWT2WZQ9w67pzx89ot68T0jt5sqCZ01gUlSb4sBICFv0n");
+
+  int httpResponseCode = http.POST("{\"notification\": { \"title\": \"Medición CO2: " + (String) medicionCO2 + "\", \"body\": \"Alta concentración de CO2.\" }, \"to\": \"" + (String) tokenApp +"\"}");
 }
 
 void checkConfiguracionDB(){
@@ -796,9 +836,9 @@ void setupServer(){
   server.begin();
 }
 
-void insertMedicionDB(int medicionCO2 , String alumno){
+void insertMedicionDB(int medicionCO2, int distancia, String alumno){
   
-  String sentencia = "INSERT INTO TFG_ARDUINO.medicion (co2, fecha, alumno) VALUES ('" + (String) medicionCO2 + "', now(), '" + alumno + "')";
+  String sentencia = "INSERT INTO TFG_ARDUINO.medicion (co2, fecha, alumno) VALUES ('" + (String) medicionCO2 + "', now(), '" + alumno + "');";
   int str_len = sentencia.length() + 1; //Length (with one extra character for the null terminator)
   char INSERT_SQL[str_len];
   sentencia.toCharArray(INSERT_SQL, str_len);
@@ -808,6 +848,17 @@ void insertMedicionDB(int medicionCO2 , String alumno){
   MySQL_Cursor *cur_mem = new MySQL_Cursor(&conn);
   // Execute the query
   cur_mem->execute(INSERT_SQL);
+
+  sentencia = "INSERT INTO TFG_ARDUINO.conectado (fecha, alumno, co2, distancia) VALUES (now(), '" + alumno + "', '" + (String) medicionCO2 + "', '" + (String) distancia + "');";
+  str_len = sentencia.length() + 1; //Length (with one extra character for the null terminator)
+  INSERT_SQL[str_len];
+  sentencia.toCharArray(INSERT_SQL, str_len);
+
+  Serial.println("MENSAJE DESDE insertConectado");
+  
+  cur_mem->execute(INSERT_SQL);
+
+  
   // Note: since there are no results, we do not need to read any data
   // Deleting the cursor also frees up memory used
   delete cur_mem;
@@ -852,6 +903,7 @@ void updateAlumnoDB(String dni, String nombre, String apellidos, String password
 
 void checkConnections( void * parameter){
   for(;;){
+    if(hasWifiParams){
     if(semaforo){
       semaforo = false;
       //Comprueba si esta conectado a la red WiFi.
@@ -866,6 +918,7 @@ void checkConnections( void * parameter){
       }
       semaforo = true;
     }
+  }
     
     delay(5000);
   }
