@@ -18,7 +18,6 @@ class _MainScreenState extends State<MainScreen> {
 
   static const TextStyle optionStyle = TextStyle(fontSize: 30, fontWeight: FontWeight.bold);
   
-
   static const List<Widget> _widgetOptions = <Widget>[
     StatisticsTab(),
     ArduinoTab(),
@@ -26,7 +25,7 @@ class _MainScreenState extends State<MainScreen> {
   ];
 
   static const List<Color> _colorOptions = [Color(0xFF5967ff), Color(0xFF5967ff), Color(0xFF5967ff)];
-  static const List<Text> _titles = [Text('Estadísticas', style: TextStyle(fontFamily: 'QuickSand', fontWeight: FontWeight.bold)), Text('Arduino', style: TextStyle(fontFamily: 'QuickSand', fontWeight: FontWeight.bold)), Text('Perfil', style: TextStyle(fontFamily: 'QuickSand', fontWeight: FontWeight.bold))];
+  static const List<Text> _titles = [Text('Mediciones', style: TextStyle(fontFamily: 'QuickSand', fontWeight: FontWeight.bold)), Text('Arduino', style: TextStyle(fontFamily: 'QuickSand', fontWeight: FontWeight.bold)), Text('Perfil', style: TextStyle(fontFamily: 'QuickSand', fontWeight: FontWeight.bold))];
 
   void _onItemTapped(int index) {
     setState(() {
@@ -55,7 +54,7 @@ class _MainScreenState extends State<MainScreen> {
             type: BottomNavigationBarType.shifting,
             selectedLabelStyle: TextStyle(fontFamily: 'Quicksand', fontWeight: FontWeight.bold),
             items: const <BottomNavigationBarItem>[
-              BottomNavigationBarItem(icon: Icon(Icons.show_chart_rounded, ), label: 'Estadísticas', backgroundColor: Color(0xFF5967ff), ),
+              BottomNavigationBarItem(icon: Icon(Icons.show_chart_rounded, ), label: 'Mediciones', backgroundColor: Color(0xFF5967ff), ),
               BottomNavigationBarItem(icon: Icon(Icons.developer_board, ), label: 'Arduino', backgroundColor: Color(0xFF5967ff),),
               BottomNavigationBarItem(icon: Icon(Icons.person, ), label: 'Perfil', backgroundColor: Color(0xFF5967ff),),
               ],
@@ -87,7 +86,4 @@ class _MainScreenState extends State<MainScreen> {
       ),
     )) ?? false;
   }
-
-
-  
 }

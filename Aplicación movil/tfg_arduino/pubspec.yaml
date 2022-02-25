@@ -45,6 +45,8 @@ dependencies:
   firebase_analytics: ^9.0.4
   firebase_messaging: ^11.2.4
   
+  syncfusion_flutter_charts: ^19.4.41
+  
   #Este es el que usaba flutter_datetime_picker: ^1.5.1
   #fl_animated_linechart: ^1.1.4
 

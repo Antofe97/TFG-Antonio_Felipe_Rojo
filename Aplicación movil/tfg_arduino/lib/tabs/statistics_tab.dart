@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui' as ui;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
@@ -9,7 +10,8 @@ import 'package:tfg_arduino/utilities/date_time_picker.dart';
 import 'package:mysql1/mysql1.dart';
 import 'package:charts_flutter/flutter.dart' as charts;
 
-
+import 'package:syncfusion_flutter_charts/charts.dart';
+import 'package:syncfusion_flutter_charts/sparkcharts.dart';
 
 
 //import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
@@ -30,6 +32,8 @@ class _StatisticsTabState extends State<StatisticsTab> {
 
   //Estilos TextButtons Filtros
   List<bool> isSelected = List.generate(5, (index) => false);
+  List<DateTimeIntervalType> intervalos = [DateTimeIntervalType.minutes, DateTimeIntervalType.hours, DateTimeIntervalType.days, DateTimeIntervalType.days, DateTimeIntervalType.months];
+  DateTimeIntervalType intervalo = DateTimeIntervalType.minutes;
 
   //Controller botones rango fechas
   late TextEditingController controllerFrom;
@@ -43,7 +47,13 @@ class _StatisticsTabState extends State<StatisticsTab> {
   int media = 0;
   int maximo = 0;
 
+  int confLowCO2 = 0;
+  int confHighCO2 = 0;
+
   //List<StatisticsSeries> data = [];
+
+  ChartSeriesController? _chartSeriesController;
+  
 
   @override
   void initState() {
@@ -184,6 +194,7 @@ class _StatisticsTabState extends State<StatisticsTab> {
                   ], 
                   onPressed: (int index) {
                     setState(() {
+                      intervalo = intervalos[index];
                       if(!isSelected[index]){
                         for (int buttonIndex = 0; buttonIndex < isSelected.length; buttonIndex++) {
                           if (buttonIndex == index) {
@@ -202,8 +213,6 @@ class _StatisticsTabState extends State<StatisticsTab> {
                   renderBorder: false,
                   fillColor: Colors.white,
                   splashColor: Colors.white,
-                  
-
                 ),
                   
                 //],
@@ -238,8 +247,6 @@ class _StatisticsTabState extends State<StatisticsTab> {
     );
   }
 
-  
-
   FutureBuilder<List<StatisticsSeries>> buildFutureBuilder() {
     // EL _future = userLoged();,  TAMBIEN SE PUEDE PONER AQUI
     return FutureBuilder<List<StatisticsSeries>>(
@@ -247,7 +254,13 @@ class _StatisticsTabState extends State<StatisticsTab> {
         // Devuelve el widget correspondiente aquí según el estado de la instantánea
       if (snapshot.hasData) {
         List<StatisticsSeries>? mediciones = snapshot.data;
-        return buildStatisticsChart(context, mediciones!);
+        return SfCartesianChart(
+          primaryXAxis: DateTimeCategoryAxis(intervalType: intervalo),
+          trackballBehavior: TrackballBehavior(enable: true, lineType: TrackballLineType.vertical, activationMode: ActivationMode.singleTap, tooltipSettings: const InteractiveTooltip(canShowMarker: true)),
+          series: <ChartSeries>[
+            LineSeries<StatisticsSeries, DateTime>(dataSource: mediciones!, xValueMapper: (StatisticsSeries medicion, _) => medicion.time, yValueMapper: (StatisticsSeries medicion, _) => medicion.cantidadCO2, pointColorMapper: (StatisticsSeries medicion, _) => medicion.barColor)
+          ],
+        );//buildStatisticsChart(context, mediciones!);
       }
         else{
           return const Center(
@@ -262,7 +275,7 @@ class _StatisticsTabState extends State<StatisticsTab> {
     );
   }
 
-  buildStatisticsChart(BuildContext context, List<StatisticsSeries> mediciones) {
+  /*buildStatisticsChart(BuildContext context, List<StatisticsSeries> mediciones) {
     List<charts.Series<StatisticsSeries, DateTime>> series = [
       charts.Series(
         id: "Mediciones",
@@ -292,11 +305,11 @@ class _StatisticsTabState extends State<StatisticsTab> {
         ),
       
     );
-  }
+  }^*/
 
   
  
-     // Actualizar los datos y restablecer el futuro
+  // Actualizar los datos y restablecer el futuro
   Future refresh(button) async {
     setState(() {
       untilDate = DateTime.now();
@@ -309,7 +322,6 @@ class _StatisticsTabState extends State<StatisticsTab> {
     });
   }
 
-
   Future<List<StatisticsSeries>> obtenerMediciones(context, email, fromDate, untilDate) async {
     List<StatisticsSeries> data = [];
 
@@ -320,8 +332,7 @@ class _StatisticsTabState extends State<StatisticsTab> {
       password: 'Arduino.1234',
       db: 'TFG_ARDUINO'
     );
-    int confLowCO2 = 0;
-    int confHighCO2 = 0;
+    
     try{
       print('SENTENCIA SQL');
       print(email);
@@ -349,6 +360,8 @@ class _StatisticsTabState extends State<StatisticsTab> {
         results = await conn.query("SELECT ROUND(AVG(co2), 0) DIV 1, STR_TO_DATE(left(fecha, 12), '%Y-%m-%d %H:%i:%s') FROM medicion WHERE alumno = ? AND fecha BETWEEN ? AND ? GROUP BY STR_TO_DATE(left(fecha, 16), '%Y-%m-%d %H:%i:%s')", [email, fromDate.toString(), untilDate.toString()]);
       }
       //results = await conn.query("SELECT ROUND(AVG(co2), 0) DIV 1, STR_TO_DATE(left(fecha, 16), '%Y-%m-%d %H:%i:%s') FROM medicion WHERE alumno = ? AND fecha BETWEEN ? AND ? GROUP BY STR_TO_DATE(left(fecha, 16), '%Y-%m-%d %H:%i:%s')", [email, fromDate.toString(), untilDate.toString()]);
+      // ESTAAAAAA results = await conn.query("SELECT co2, fecha FROM medicion WHERE alumno = ? AND fecha BETWEEN ? AND ?;", [email, fromDate.toString(), untilDate.toString()]);
+
       print (results.length);
       if(results.isNotEmpty){
         minimo = results.first[0];
@@ -364,9 +377,9 @@ class _StatisticsTabState extends State<StatisticsTab> {
         if(row[0] > maximo){ maximo = row[0];}
         media = media + row[0] as int;
         
-        if(row[0] >= confHighCO2){data.add(StatisticsSeries(cantidadCO2: row[0], time: row[1], barColor: charts.ColorUtil.fromDartColor(Colors.red)));}
-        else if (row[0] >= confLowCO2) {data.add(StatisticsSeries(cantidadCO2: row[0], time: row[1], barColor: charts.ColorUtil.fromDartColor(Colors.orange)));}
-        else {data.add(StatisticsSeries(cantidadCO2: row[0], time: row[1], barColor: charts.ColorUtil.fromDartColor(Colors.blue)));}
+        if(row[0] >= confHighCO2){data.add(StatisticsSeries(cantidadCO2: row[0], time: row[1], barColor: Colors.red));}
+        else if (row[0] >= confLowCO2) {data.add(StatisticsSeries(cantidadCO2: row[0], time: row[1], barColor: Colors.orange));}
+        else {data.add(StatisticsSeries(cantidadCO2: row[0], time: row[1], barColor: Colors.blue));}
         
       }
       if(results.isNotEmpty){
@@ -383,7 +396,6 @@ class _StatisticsTabState extends State<StatisticsTab> {
     }
     return data;
   }
-
 
 }
 
@@ -444,7 +456,7 @@ class _StatisticsChartState extends State<StatisticsChart> {
 class StatisticsSeries {
   final int cantidadCO2;
   final DateTime time;
-  final charts.Color barColor;
+  final Color barColor;
 
   StatisticsSeries(
     {

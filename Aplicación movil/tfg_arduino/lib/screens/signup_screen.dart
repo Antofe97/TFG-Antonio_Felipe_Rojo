@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
-import 'package:tfg_arduino/components/custom_text_field.dart';
+import 'package:tfg_arduino/utilities/custom_text_field.dart';
 import 'package:tfg_arduino/utilities/alert_dialogs.dart';
 import 'package:tfg_arduino/utilities/user_secure_storage.dart';
 import 'package:mysql1/mysql1.dart';
@@ -104,8 +104,6 @@ class SignUpScreen extends StatelessWidget {
               }, child: const Text('Inicia Sesión', style: TextStyle(fontSize: 17,color: Color(0xFF5967ff), fontFamily: 'Quicksand', fontWeight: FontWeight.bold),))
             ],)
             
-            
-            
           ],
         )
         
@@ -145,24 +143,24 @@ class SignUpScreen extends StatelessWidget {
     try{
       var conn = await MySqlConnection.connect(settings);
     
-      await conn.query('INSERT INTO TFG_ARDUINO.alumno (dni, nombre, apellidos, password, token_app) VALUES (?,?,?,?,?);', [dniController.text, nombreController.text, apellidosController.text, passwordController.text, tokenApp]);
-      await conn.query('INSERT INTO TFG_ARDUINO.configuracion (co2Low, co2Max, distancia, alumno) VALUES (?,?,?,?);', [600, 1400, 140, dniController.text]);
-
       var cuenta = await conn.query('SELECT * FROM alumno WHERE dni = ?;', [dniController.text]);
 
-      if (cuenta.isNotEmpty){
+      if(cuenta.isEmpty){
+        await conn.query('INSERT INTO TFG_ARDUINO.alumno (dni, nombre, apellidos, password, token_app) VALUES (?,?,?,?,?);', [dniController.text, nombreController.text, apellidosController.text, passwordController.text, tokenApp]);
+        await conn.query('INSERT INTO TFG_ARDUINO.configuracion (co2Low, co2Max, distancia, alumno) VALUES (?,?,?,?);', [600, 1400, 140, dniController.text]);
+
         Navigator.pop(context);
         await conn.close();
         await UserSecureStorage.setLoginParameters(dniController.text, passwordController.text);
-        
+          
         Phoenix.rebirth(context);
+        
       }
       else{
         Navigator.pop(context);
         await conn.close();
-        showMyDialog(context, 'No se ha creado la cuenta', 'El DNI introducido o la contraseña son incorrectas. Vuelve a intentarlo.');
+        showMyDialog(context, 'No se ha creado la cuenta', 'Ya existe una cuenta con el DNI introducido. Vuelve a intentarlo.');
       }
-      
       
     } on SocketException catch (e){
       print('Error caught: $e');

@@ -8,7 +8,9 @@ import 'dart:io';
 import 'package:mysql1/mysql1.dart';
 import 'package:tfg_arduino/utilities/alert_dialogs.dart';
 
-import 'package:tfg_arduino/components/custom_text_field.dart';
+import 'package:tfg_arduino/utilities/custom_text_field.dart';
+
+import 'dart:math';
 
 class ProfileTab extends StatefulWidget {
   const ProfileTab({ Key? key }) : super(key: key);
@@ -32,6 +34,8 @@ class _ProfileTabState extends State<ProfileTab> {
 
   late Timer periodic;
 
+
+Random random = new Random();
 
   @override
   void initState(){
@@ -213,7 +217,6 @@ class _ProfileTabState extends State<ProfileTab> {
                     ),
                   )
           ),
-
               ],
             ),
           )),
@@ -269,6 +272,7 @@ class _ProfileTabState extends State<ProfileTab> {
       ),
   )) ?? false;
 }
+  
 Future updatePerfil(dni, nombre, apellidos) async {
     var settings = ConnectionSettings(
       host: 'tfgarduino.ddns.net', 
@@ -280,6 +284,10 @@ Future updatePerfil(dni, nombre, apellidos) async {
 
     try{
       var conn = await MySqlConnection.connect(settings);
+
+      var cuenta = await conn.query('SELECT * FROM alumno WHERE dni = ?;', [dniController.text]);
+
+      if(cuenta.isEmpty){
       await conn.query("UPDATE alumno SET dni = ?, nombre = ?, apellidos = ? WHERE dni = ?", [dni, nombre, apellidos,  _email]);
       await UserSecureStorage.setDNI(dni);
 
@@ -287,9 +295,14 @@ Future updatePerfil(dni, nombre, apellidos) async {
         content:  Text('Perfil actualizado correctamente'),
         backgroundColor: Colors.green,
         behavior: SnackBarBehavior.floating,
-        
       );
       ScaffoldMessenger.of(context).showSnackBar(snackBar);
+      }
+      else{
+        Navigator.pop(context);
+        await conn.close();
+        showMyDialog(context, 'No se ha actualizado los datos', 'Ya existe una cuenta con el DNI introducido. Vuelve a intentarlo.');
+      }
 
     } on SocketException catch (e){
       print('Error caught: $e');
@@ -377,10 +390,6 @@ Future updatePassword(newPassword) async {
       ),
   )) ?? false;
 
-      
-        
-      
-
     } on SocketException catch (e){
       print('Error caught: $e');
       //Navigator.pop(context);
@@ -393,16 +402,7 @@ Future updatePassword(newPassword) async {
   }
 }
 
-
-
 void _cerrarSesion(context) async {
   await UserSecureStorage.deleteAll();
   Phoenix.rebirth(context);
-  /*Navigator.pushReplacement(context,
-    MaterialPageRoute<void>(
-      builder: (context) {
-        return const MyApp();
-      },
-    ),
-  );*/
 }

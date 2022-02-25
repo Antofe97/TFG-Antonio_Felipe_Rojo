@@ -6,7 +6,7 @@ import 'package:mysql1/mysql1.dart';
 
 import 'package:tfg_arduino/utilities/alert_dialogs.dart';
 import 'package:tfg_arduino/utilities/user_secure_storage.dart';
-import 'package:tfg_arduino/components/custom_text_field.dart';
+import 'package:tfg_arduino/utilities/custom_text_field.dart';
 
 class ArduinoTab extends StatefulWidget {
   const ArduinoTab({Key? key}) : super(key: key);
