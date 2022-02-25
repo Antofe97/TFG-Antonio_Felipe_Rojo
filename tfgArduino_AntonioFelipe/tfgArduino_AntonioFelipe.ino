@@ -3,8 +3,9 @@
 #include <TimeLib.h>
 unsigned long previousTime;
 unsigned long actualTime;
+unsigned long heatTime;
 
-//  LED RGB
+//LED RGB
 #include <Adafruit_NeoPixel.h>
 #define PIN 15
 #define NUM 1
@@ -25,7 +26,6 @@ const char *pass = "arduino";
 #include "FS.h" //Para usar File
 #include "ArduinoJson.h"
 
-
 ///// BASE DE DATOS
 #include <MySQL_Connection.h>
 #include <MySQL_Cursor.h>
@@ -34,12 +34,12 @@ const char *pass = "arduino";
 
 IPAddress server_addr;  // IP of the MySQL *server* here
 char hostname_DB[] = "tfgarduino.ddns.net";
-char user[] = "arduino";              // MySQL user login username
-char passwordDB[] = "Arduino.1234";        // MySQL user login password
+char user[] = "arduino";              // Usuario MySQL
+char passwordDB[] = "Arduino.1234";        // Contraseña MySQL
 
 /// BASE DE DATOS
-  WiFiClient client;            // Use this for WiFi instead of EthernetClient
-  MySQL_Connection conn((Client *)&client);
+WiFiClient client;  // Use this for WiFi instead of EthernetClient
+MySQL_Connection conn((Client *)&client);
   
 // Import required libraries
 #include "WiFi.h"
@@ -54,44 +54,29 @@ int conf_distance;
 int conf_co2_mid;
 int conf_co2_max;
 String conf_dni;
+String conf_ssid;
 String tokenApp;
 boolean semaforo =true;
-boolean semaforoDB;
-boolean hasWifiParams = false;
+//boolean semaforoDB;
+//boolean hasWifiParams = false;
+
+int loops;
 
 TaskHandle_t TaskCheckConnections;
 
 String lectura(const String& var){
-  /*//Lectura fichero JSON
-  File file = SPIFFS.open("/configuracion.json","r");
-  
-  DynamicJsonDocument doc(1024);                         //Memory pool
-  DeserializationError error = deserializeJson(doc, file); //Parse message
-  if(error){
-    Serial.print(F("deserializeJson() failed: "));
-    Serial.println(error.f_str());
-    return String();
-  }
-  file.close();*/
-
   DynamicJsonDocument doc = readConFile();
 
   if(var == "SSID"){
-    //const char* value = doc["ssid"];
-    //const char* value = WiFi.SSID();
     if(WiFi.SSID() != ""){
-      
-      hasWifiParams = true;
-          return "Conectado actualmente a: " + WiFi.SSID();
+      //hasWifiParams = true;
+      return "Conectado actualmente a: " + WiFi.SSID();
     }
     else{
       return "El dispositivo no está conectado a ninguna red WiFi";
     }
   }
-  //if(var == "PASSWORD"){
-  //  const char* value = doc["password"];
-  //  return value;
-  //}
+  
   if(var == "CO2_MAX"){
     const char* value = doc["co2_max"];
     return value;
@@ -109,34 +94,25 @@ String lectura(const String& var){
   String alu_password = doc["alu_password"];
   if(var == "SESION"){
     Serial.println("DNI: " +dni+" , PASSWORD: " + alu_password);
-    if(comprobarSesion(dni, alu_password)) {
-      Serial.println("SESION CORRECTA");
-      
-      return "Sesión iniciada como: " + dni;
-    } else{
-      Serial.println("SESION INCORRECTA");
-      return "";
+    if(dni != ""){
+      if(conn.connected() != 0){
+        if(comprobarSesion(dni, alu_password)) {
+          Serial.println("SESION CORRECTA");
+          return "Sesión iniciada como: " + dni;
+        } else{
+          Serial.println("SESION INCORRECTA");
+          return "";
+        }
+      } else {
+        return "Sesión iniciada como: " + dni;
       }
+    }
   }
-  /*if(var == "DNI"){
-    const char* value = doc["dni"];
-    return value;
-  }
-  if(var == "NOMBRE"){
-    const char* value = doc["nombre"];
-    return value;
-  }
-  if(var == "APELLIDOS"){
-    const char* value = doc["apellidos"];
-    return value;
-  }
-  if(var == "ALU_PASSWORD"){
-    const char* value = doc["alu_password"];
-    return value;
-  }*/
   
   return String();
 }
+
+//Comprueba que el DNI y contraseña son correctos
 boolean comprobarSesion(String dni, String password){
   String sentencia = "SELECT * FROM TFG_ARDUINO.alumno WHERE dni = '" + dni + "' AND password = '" + password +"';";
   int str_len = sentencia.length() + 1; //Length (with one extra character for the null terminator)
@@ -144,13 +120,12 @@ boolean comprobarSesion(String dni, String password){
   sentencia.toCharArray(INSERT_SQL, str_len);
 
   Serial.println("MENSAJE DESDE comprobarSesion");
-  // Initiate the query class instance
+  // Iniciar instancia MySQL
   MySQL_Cursor *cur_mem = new MySQL_Cursor(&conn);
-  // Execute the query
+  // Ejecutar consulta SQL
   cur_mem->execute(INSERT_SQL);
-  // Fetch the columns and print them
+  // Recorrer filas
   column_names *cols = cur_mem->get_columns();
-  // Read the rows and print them
   row_values *row = NULL;
   do {
     row = cur_mem->get_next_row();
@@ -164,17 +139,25 @@ boolean comprobarSesion(String dni, String password){
   delete cur_mem; //Eliminar cursor para liberar memoria
   return false;
 }
+
+//Modificar conexión Wi-Fi
 String modifyWifi(String ssid, String password){
+    //Obtener JSON de configuración almacenado
     DynamicJsonDocument doc = readConFile();
     doc["ssid"] = ssid;
     doc["password"] = password;
 
     WiFi.disconnect(true);
+    //Actualizar parámetros de conexión y guardar JSON
     writeConFile(doc);
+    //Volver a conectar Wi-Fi
     connectWifi();
     return String();
 }
+
+//Modificar límites CO2 y distancia
 String modifyLimits(String co2_mid, String co2_max, String distance){
+    //Obtener JSON de configuración almacenado
     DynamicJsonDocument doc = readConFile();
     doc["co2_max"] = co2_max;
     doc["co2_mid"] = co2_mid;
@@ -183,10 +166,13 @@ String modifyLimits(String co2_mid, String co2_max, String distance){
     conf_distance = distance.toInt();
     conf_co2_max = co2_max.toInt();
     conf_co2_mid = co2_mid.toInt();
-    
+
+    //Actualizar JSON y almacenar
     writeConFile(doc);
     return String();
 }
+
+//Comprueba inicio de sesión, actualiza JSON y modifica el AP y DNS
 String iniciarSesion(String dni, String password){
   if(comprobarSesion(dni, password)){
     DynamicJsonDocument doc = readConFile();
@@ -205,12 +191,12 @@ String iniciarSesion(String dni, String password){
     return String();
 }
 
+//Actualiza JSON y modifica el AP y el DNS
 String cerrarSesion(){
     DynamicJsonDocument doc = readConFile();
     doc["dni"] = "";
     doc["alu_password"] = "";
 
-    //updateAlumnoDB(dni, nombre, apellidos, password, conf_dni);
     conf_dni = "";
     
     writeConFile(doc);
@@ -223,7 +209,7 @@ String cerrarSesion(){
 
 ////////////////
 
-// Pantalla
+// Pantalla OLED
 #include <SPI.h>
 #include <Wire.h>
 #include <Adafruit_GFX.h>
@@ -241,7 +227,7 @@ String cerrarSesion(){
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT,
   OLED_MOSI, OLED_CLK, OLED_DC, OLED_RESET, OLED_CS);
 
-// '1200px-LogoUCLM', 128x64px
+// Logo UCLM
 const unsigned char logoUCLM [] PROGMEM = {
   0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
   0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
@@ -309,7 +295,7 @@ const unsigned char logoUCLM [] PROGMEM = {
   0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
 };
 
-// 'database_icon', 10x10px
+// Icono Base de Datos
 const unsigned char database_icon [] PROGMEM = {
   0x3f, 0x00, 0x7f, 0x80, 0x7f, 0x80, 0x3f, 0x00, 0x40, 0x80, 0x7f, 0x80, 0x3f, 0x00, 0x40, 0x80, 
   0x7f, 0x80, 0x3f, 0x00
@@ -357,19 +343,19 @@ void setup() {
 
   display.clearDisplay();
   display.display();
-  delay(2000);
+  //delay(2000);
   
   display.clearDisplay();
 
   display.drawBitmap(0, 0, logoUCLM, 128, 64, WHITE); // display.drawBitmap(x position, y position, bitmap data, bitmap width, bitmap height, color)
   display.display();
-  //delay(2000); // Pause for 2 seconds
+  delay(2000); // Pause for 2 seconds
 
   
   ////////
   ////////////////////////
 
-  // Initialize SPIFFS
+  // Inicializar SPIFFS
   if(!SPIFFS.begin(true)){
     Serial.println("Error al montar el sistema de ficheros SPIFFS");
     return;
@@ -381,9 +367,9 @@ void setup() {
   //const char* ssid = doc["ssid"];
   //const char* password = doc["password"];
   
-  connectWifi();
+  //connectWifi();
 
-  connectDB();
+  //connectDB();
   
   startDNS();
   
@@ -401,8 +387,10 @@ void setup() {
   conf_dni = cambio;
   String cambio2 = doc["token_app"];
   tokenApp = cambio2;
+  String cambio3 = doc["ssid"];
+  conf_ssid = cambio3;
   ///////////////
-  ////////
+  //////// Asignación del metodo checkConnections() al Core 0
   xTaskCreatePinnedToCore(
       checkConnections, /* Function to implement the task */
       "TaskCheckConnections", /* Name of the task */
@@ -420,9 +408,10 @@ void setup() {
   display.clearDisplay();
   display.display();
 
+  //Inicialización tiempo de calentamiento MQ135
+  heatTime = millis();
   //Inicialización contador de tiempo para las notificaciones
-  previousTime = millis();
-  
+  previousTime = millis() - 300000;
   
   pixels.begin();
 }
@@ -452,7 +441,7 @@ void loop() {
   //}
   if (medicionCO2 < conf_co2_mid){
     
-    mensaje = "Calidad aire\ncorrecta";
+    mensaje = "Calidad \naire correcta";
     pixels.setPixelColor(0, pixels.Color(0,255,0));
     pixels.show();
   }
@@ -483,7 +472,7 @@ void loop() {
 
   display.println(mensaje);
   display.setCursor(0,16);
-  display.println("Medicion CO2:");
+  display.println("Medicion CO2 (ppm):");
 
   // Barras señal wifi
   long rssi = WiFi.RSSI();
@@ -509,12 +498,16 @@ void loop() {
     bars = 0;
   }
 
+  if(WiFi.status() != WL_CONNECTED){
+    display.setCursor(60,0);
+    display.println(WiFi.softAPIP());
+  } else{
   for (int b = 0; b <= bars; b++) {
     //display.fillRect(59 + (b*5),33 - (b*5),3,b*5,WHITE);
     //display.fillRect(59 + (b*5),33 - (b*3),3,b*4,WHITE);
     display.fillRect(95 + (b * 5), 10 - (b * 2), 3, b * 2, WHITE);
   }
-
+  }
   if(conn.connected() == 1){
       display.drawBitmap(85, 0, database_icon, 10, 10, WHITE); // display.drawBitmap(x position, y position, bitmap data, bitmap width, bitmap height, color)
   }
@@ -530,29 +523,46 @@ void loop() {
   display.setTextColor(SSD1306_WHITE);
   display.setCursor(0, 25);
   display.print(medicionCO2);
-
+  
   display.setCursor(0,40);
   display.setTextSize(1); 
-  display.println("Distancia:");
+  display.println("Distancia (cm):");
   display.setCursor(0,50);
   display.setTextSize(2);
   display.print(medicionDistancia);
 
   display.display();
 
-  if(conn.connected() != 0){
-    if(conf_dni != ""){
+  loops = 0;
+  
+  do{
     if(semaforo){
+      Serial.println("Bloqueo (LOOP)");
       semaforo = false;
-        insertMedicionDB(medicionCO2, medicionDistancia, conf_dni);
-        checkConfiguracionDB();
+      if(conn.connected() != 0){
+        heatTime = millis();
+        if(heatTime > 120000){ //Solo inserta medición despues de 2 minutos desde el encendido
+          if(conf_dni != ""){
+            insertMedicionDB(medicionCO2, medicionDistancia, conf_dni);
+            checkConfiguracionDB();
+          }
+        }
+      }
+      Serial.println("Libero (LOOP)");
       semaforo = true;
     }
-  }
-  }
+    else{
+      if(loops == 10){
+        Serial.println("SALGO");
+        break;
+      }
+      loops = loops + 1;
+      Serial.println(loops);
+      Serial.println("Me espero (LOOP)");
+      delay(100);
+    }
+  }while(!semaforo);
   
-  
- 
   delay(5000); //Actualización cada 5 segundos
 }
 
@@ -628,8 +638,8 @@ void createAccessPoint(){
   String dni = doc["dni"];
   String ssidap = "Arduino_" + dni;
   const char *ssidAP = ssidap.c_str();
-  const char *passwordAP = "abcd1234";
-  WiFi.softAP(ssidAP, passwordAP);
+  //const char *passwordAP = "abcd1234";
+  WiFi.softAP(ssidAP);
   IPAddress myIP = WiFi.softAPIP();
   Serial.print("Dirección IP Punto de Acceso: ");
   Serial.println(myIP);
@@ -710,7 +720,6 @@ String scanWiFi(){
             
           }
           
-          
             // Print SSID and RSSI for each network found
             //Serial.print(i + 1);
             //Serial.print(": ");
@@ -758,11 +767,26 @@ void setupServer(){
       password = "No se ha introducido contraseña";
     }
 
-    if(semaforo){
-      semaforo = false;
-      modifyWifi(ssid, password);
-      semaforo = true;
-    }
+    //if(semaforo){
+      //semaforo = false;
+      do{
+        if(semaforo){
+          Serial.println("Bloqueo (/modifyWifi)");
+          semaforo = false;
+          
+          modifyWifi(ssid, password);
+          
+          Serial.println("Libero (/modifiyWifi)");
+          semaforo = true;
+        }
+        else{
+          Serial.println("Me espero (/modifyWifi)");
+          delay(100);
+        }
+      }while(!semaforo);
+      //modifyWifi(ssid, password);
+      //semaforo = true;
+    //}
     request->redirect("http://arduino_" + conf_dni + "/");
     //request->send(SPIFFS, "/index.html", String(), false, lectura);
   });
@@ -804,11 +828,26 @@ void setupServer(){
       password = request->getParam("alu_password")->value();
     }
     
-    if(semaforo){
-      semaforo = false;
-      iniciarSesion(dni, password);
-      semaforo = true;
-    }
+    //if(semaforo){
+      //semaforo = false;
+      do{
+        if(semaforo){
+          Serial.println("Bloqueo (/iniciarSesion)");
+          semaforo = false;
+          
+          iniciarSesion(dni, password);
+          
+          Serial.println("Libero (/iniciarSesion)");
+          semaforo = true;
+        }
+        else{
+          Serial.println("Me espero (/iniciarSesion)");
+          delay(100);
+        }
+      }while(!semaforo);
+      //iniciarSesion(dni, password);
+      //semaforo = true;
+    //}
     delay(2000);
     request->redirect("http://arduino_" + conf_dni + "/");
     //request->send(SPIFFS, "/index.html", String(), false, lectura);
@@ -816,11 +855,26 @@ void setupServer(){
 
   server.on("/cerrarSesion", HTTP_GET, [](AsyncWebServerRequest *request){
 
-    if(semaforo){
-      semaforo = false;
-      cerrarSesion();
-      semaforo = true;
-    }
+    //if(semaforo){
+      //semaforo = false;
+      do{
+        if(semaforo){
+          Serial.println("Bloqueo (/cerrarSesion)");
+          semaforo = false;
+          
+          cerrarSesion();
+          
+          Serial.println("Libero (/cerrarSesion)");
+          semaforo = true;
+        }
+        else{
+          Serial.println("Me espero (/cerrarSesion)");
+          delay(100);
+        }
+      }while(!semaforo);
+      //cerrarSesion();
+      //semaforo = true;
+    //}
     delay(2000);
     request->redirect("http://arduino_" + conf_dni + "/");
     //request->send(SPIFFS, "/index.html", String(), false, lectura);
@@ -903,23 +957,30 @@ void updateAlumnoDB(String dni, String nombre, String apellidos, String password
 
 void checkConnections( void * parameter){
   for(;;){
-    if(hasWifiParams){
-    if(semaforo){
-      semaforo = false;
-      //Comprueba si esta conectado a la red WiFi.
-      if (WiFi.status() != WL_CONNECTED) {
+    boolean finalizado = false;
+    do{
+      if(conf_ssid != ""){
+      if(semaforo){
+        Serial.println("Bloqueo (CONNECTIONS)");
+        semaforo = false;
+        if (WiFi.status() != WL_CONNECTED) {
         Serial.println("Desconectado de la red WiFi. Intentando conectar...");
         connectWifi();
+        }
+        //Comprueba si esta conectado a la base de datos.
+        if(conn.connected() == 0 && WiFi.status() == WL_CONNECTED){
+          Serial.println("Desconectado de la DB. Intentando conectar...");
+          connectDB();    
+        }
+        Serial.println("Libero (CONNECTIONS)");
+        semaforo = true;
+        finalizado = true;
       }
-      //Comprueba si esta conectado a la base de datos.
-      if(conn.connected() == 0 && WiFi.status() == WL_CONNECTED){
-        Serial.println("Desconectado de la DB. Intentando conectar...");
-        connectDB();    
-      }
-      semaforo = true;
+      else{
+        Serial.println("Me espero (CONNECTIONS)");
+        delay(100);}
     }
-  }
-    
+    }while(!semaforo && finalizado);
     delay(5000);
   }
 }
