@@ -253,7 +253,7 @@ class _ArduinoTabState extends State<ArduinoTab> {
       distancia = configuracion.first[2];
     } on SocketException catch (e) {
       print('Error caught: $e');
-      Navigator.pop(context);
+      //Navigator.pop(context);
       showMyDialog(context, 'No se ha podido conectar',
           'Error al conectar con la base de datos. Vuelve a intentarlo mas tarde');
     }
@@ -286,7 +286,7 @@ class _ArduinoTabState extends State<ArduinoTab> {
       ScaffoldMessenger.of(context).showSnackBar(snackBar);
     } on SocketException catch (e) {
       print('Error caught: $e');
-      Navigator.pop(context);
+      //Navigator.pop(context);
       //showMyDialog(context, 'No se ha podido conectar', 'Error al conectar con la base de datos. Vuelve a intentarlo mas tarde');
       const snackBar = SnackBar(
         content: Text('No se ha podido guardar la configuración'),

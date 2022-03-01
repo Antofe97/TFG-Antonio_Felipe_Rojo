@@ -287,7 +287,7 @@ Future updatePerfil(dni, nombre, apellidos) async {
 
       var cuenta = await conn.query('SELECT * FROM alumno WHERE dni = ?;', [dniController.text]);
 
-      if(cuenta.isEmpty){
+      if(cuenta.isEmpty || dniController.text == _email){
       await conn.query("UPDATE alumno SET dni = ?, nombre = ?, apellidos = ? WHERE dni = ?", [dni, nombre, apellidos,  _email]);
       await UserSecureStorage.setDNI(dni);
 
@@ -296,10 +296,14 @@ Future updatePerfil(dni, nombre, apellidos) async {
         backgroundColor: Colors.green,
         behavior: SnackBarBehavior.floating,
       );
+      if (dniController.text == _email){
+        await UserSecureStorage.setDNI(dni);
+      }
+      
       ScaffoldMessenger.of(context).showSnackBar(snackBar);
       }
       else{
-        Navigator.pop(context);
+        //Navigator.pop(context);
         await conn.close();
         showMyDialog(context, 'No se ha actualizado los datos', 'Ya existe una cuenta con el DNI introducido. Vuelve a intentarlo.');
       }
@@ -339,11 +343,12 @@ Future updatePassword(newPassword) async {
         behavior: SnackBarBehavior.floating,
         
       );
+      await UserSecureStorage.setPassword(newPassword);
       ScaffoldMessenger.of(context).showSnackBar(snackBar);
 
     } on SocketException catch (e){
       print('Error caught: $e');
-      Navigator.pop(context);
+      //Navigator.pop(context);
       //showMyDialog(context, 'No se ha podido conectar', 'Error al conectar con la base de datos. Vuelve a intentarlo mas tarde');
       const snackBar =  SnackBar(
         content: Text('No se ha podido actualizar la contraseña', style: TextStyle(fontFamily: 'Quicksand')),
